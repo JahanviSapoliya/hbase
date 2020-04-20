@@ -46,6 +46,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
@@ -94,6 +95,8 @@ import org.apache.hadoop.hbase.regionserver.throttle.ThroughputController;
 import org.apache.hadoop.hbase.regionserver.wal.WALUtil;
 import org.apache.hadoop.hbase.security.EncryptionUtil;
 import org.apache.hadoop.hbase.security.User;
+import org.apache.hadoop.hbase.shaded.protobuf.ProtobufUtil;
+import org.apache.hadoop.hbase.shaded.protobuf.generated.WALProtos.CompactionDescriptor;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.ChecksumType;
 import org.apache.hadoop.hbase.util.ClassSize;
@@ -102,9 +105,6 @@ import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.StringUtils.TraditionalBinaryPrefix;
-import org.apache.yetus.audience.InterfaceAudience;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.hbase.thirdparty.com.google.common.base.Preconditions;
 import org.apache.hbase.thirdparty.com.google.common.collect.ImmutableCollection;
@@ -112,10 +112,12 @@ import org.apache.hbase.thirdparty.com.google.common.collect.ImmutableList;
 import org.apache.hbase.thirdparty.com.google.common.collect.Lists;
 import org.apache.hbase.thirdparty.com.google.common.collect.Maps;
 import org.apache.hbase.thirdparty.com.google.common.collect.Sets;
+import org.apache.hbase.thirdparty.com.google.common.io.Closeables;
 import org.apache.hbase.thirdparty.org.apache.commons.collections4.CollectionUtils;
 import org.apache.hbase.thirdparty.org.apache.commons.collections4.IterableUtils;
-import org.apache.hadoop.hbase.shaded.protobuf.ProtobufUtil;
-import org.apache.hadoop.hbase.shaded.protobuf.generated.WALProtos.CompactionDescriptor;
+import org.apache.yetus.audience.InterfaceAudience;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Store holds a column family in a Region.  Its a memstore and a set of zero
@@ -156,6 +158,9 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
   volatile boolean forceMajor = false;
   private AtomicLong storeSize = new AtomicLong();
   private AtomicLong totalUncompressedBytes = new AtomicLong();
+  private LongAdder getRequestsFromMemstore = new LongAdder();
+  private LongAdder getRequestsFromFile = new LongAdder();
+  private LongAdder getRequestsFromStore = new LongAdder();
 
   private boolean cacheOnWriteLogged;
 
@@ -232,6 +237,8 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
   private AtomicLong flushedOutputFileSize = new AtomicLong();
   private AtomicLong compactedCellsSize = new AtomicLong();
   private AtomicLong majorCompactedCellsSize = new AtomicLong();
+  private MetricsStore metricsStore;
+  private MetricsStoreWrapperImpl metricsStoreWrapper;
 
   /**
    * Constructor
@@ -325,6 +332,9 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
       confPrintThreshold = 10;
     }
     this.parallelPutCountPrintThreshold = confPrintThreshold;
+    this.metricsStoreWrapper = new MetricsStoreWrapperImpl(this);
+    this.metricsStore = new MetricsStore(this.metricsStoreWrapper, conf);
+
     LOG.info("Store={},  memstore type={}, storagePolicy={}, verifyBulkLoads={}, "
             + "parallelPutCountPrintThreshold={}, encoding={}, compression={}",
         getColumnFamilyName(), memstore.getClass().getSimpleName(), policyName, verifyBulkLoads,
@@ -1002,6 +1012,14 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
     } finally {
       this.lock.writeLock().unlock();
       this.archiveLock.unlock();
+      // moving it after the unlocking so
+      // that metrics closure does not affect them
+      if (this.metricsStore != null) {
+        metricsStore.close();
+      }
+      if (metricsStoreWrapper != null) {
+        Closeables.close(this.metricsStoreWrapper, true);
+      }
     }
   }
 
@@ -2882,6 +2900,42 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
       .max();
     return maxCompactedStoreFileRefCount.isPresent()
       ? maxCompactedStoreFileRefCount.getAsInt() : 0;
+  }
+
+  @Override
+  public long getReadRequestsFromStoreCount() {
+    return getRequestsFromStore.sum();
+  }
+
+  @Override
+  public long getGetRequestsCountFromMemstore() {
+    return getRequestsFromMemstore.sum();
+  }
+  
+  @Override
+  public long getGetRequestsCountFromFile() {
+    return getRequestsFromFile.sum();
+  }
+
+  void incrGetRequestsFromStore() {
+    getRequestsFromStore.increment();
+    if (metricsStore != null) {
+      metricsStore.updateGet();
+    }
+  }
+
+  void updateMetricsStore(boolean memstoreRead) {
+    if (memstoreRead) {
+      getRequestsFromMemstore.increment();
+    } else {
+      getRequestsFromFile.increment();
+    }
+    if (metricsStore != null) {
+      if (memstoreRead) {
+        metricsStore.updateMemstoreGet();
+      }
+      metricsStore.updateFileGet();
+    }
   }
 
 }
