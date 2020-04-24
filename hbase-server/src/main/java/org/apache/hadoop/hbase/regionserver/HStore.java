@@ -333,7 +333,7 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
     }
     this.parallelPutCountPrintThreshold = confPrintThreshold;
     this.metricsStoreWrapper = new MetricsStoreWrapperImpl(this);
-    this.metricsStore = new MetricsStore(this.metricsStoreWrapper, conf);
+    this.metricsStore = new MetricsStore(this.metricsStoreWrapper);
 
     LOG.info("Store={},  memstore type={}, storagePolicy={}, verifyBulkLoads={}, "
             + "parallelPutCountPrintThreshold={}, encoding={}, compression={}",
@@ -2932,8 +2932,9 @@ public class HStore implements Store, HeapSize, StoreConfigInformation,
     if (metricsStore != null) {
       if (memstoreRead) {
         metricsStore.updateMemstoreGet();
+      } else {
+        metricsStore.updateFileGet();
       }
-      metricsStore.updateFileGet();
     }
   }
 
