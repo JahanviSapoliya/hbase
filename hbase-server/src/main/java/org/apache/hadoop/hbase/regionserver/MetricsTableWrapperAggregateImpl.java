@@ -61,7 +61,6 @@ public class MetricsTableWrapperAggregateImpl implements MetricsTableWrapperAggr
     @Override
     public void run() {
       Map<TableName, MetricsTableValues> localMetricsTableMap = new HashMap<>();
-
       for (Region r : regionServer.getOnlineRegionsLocalContext()) {
         TableName tbl = r.getTableDescriptor().getTableName();
         MetricsTableValues mt = localMetricsTableMap.get(tbl);
@@ -70,21 +69,31 @@ public class MetricsTableWrapperAggregateImpl implements MetricsTableWrapperAggr
           localMetricsTableMap.put(tbl, mt);
         }
         if (r.getStores() != null) {
+          long memstoreReadCount = 0l;
+          long fileReadCount = 0l;
+          String familyName = null;
           for (Store store : r.getStores()) {
+            familyName = store.getColumnFamilyName();
+
             mt.storeFileCount += store.getStorefilesCount();
-            mt.memstoreSize += (store.getMemStoreSize().getDataSize() +
-              store.getMemStoreSize().getHeapSize() + store.getMemStoreSize().getOffHeapSize());
+            mt.memstoreSize += (store.getMemStoreSize().getDataSize()
+                + store.getMemStoreSize().getHeapSize() + store.getMemStoreSize().getOffHeapSize());
             mt.storeFileSize += store.getStorefilesSize();
             mt.referenceFileCount += store.getNumReferenceFiles();
 
-            mt.maxStoreFileAge = Math.max(mt.maxStoreFileAge, store.getMaxStoreFileAge().getAsLong());
-            mt.minStoreFileAge = Math.min(mt.minStoreFileAge, store.getMinStoreFileAge().getAsLong());
-            mt.totalStoreFileAge = (long)store.getAvgStoreFileAge().getAsDouble() *
-                store.getStorefilesCount();
+            mt.maxStoreFileAge =
+                Math.max(mt.maxStoreFileAge, store.getMaxStoreFileAge().getAsLong());
+            mt.minStoreFileAge =
+                Math.min(mt.minStoreFileAge, store.getMinStoreFileAge().getAsLong());
+            mt.totalStoreFileAge =
+                (long) store.getAvgStoreFileAge().getAsDouble() * store.getStorefilesCount();
             mt.storeCount += 1;
-            mt.memstoreGetCount += store.getGetRequestsCountFromMemstore();
-            mt.fileGetCount += store.getGetRequestsCountFromFile();
+            memstoreReadCount += store.getGetRequestsCountFromMemstore();
+            fileReadCount += store.getGetRequestsCountFromFile();
+            mt.storeMemstoreGetCount.putIfAbsent(familyName, memstoreReadCount);
+            mt.storeFileGetCount.putIfAbsent(familyName, fileReadCount);
           }
+
           mt.regionCount += 1;
 
           mt.readRequestCount += r.getReadRequestsCount();
@@ -113,7 +122,7 @@ public class MetricsTableWrapperAggregateImpl implements MetricsTableWrapperAggr
         if (metricsTableMap.get(table) != null) {
           metricsTableMap.remove(table);
         }
-      }
+      } 
     }
   }
 
@@ -128,22 +137,22 @@ public class MetricsTableWrapperAggregateImpl implements MetricsTableWrapperAggr
   }
 
   @Override
-  public long getMemstoreReadRequestCount(String table) {
+  public Map<String, Long> getMemstoreReadRequestCount(String table) {
     MetricsTableValues metricsTable = metricsTableMap.get(TableName.valueOf(table));
     if (metricsTable == null) {
-      return 0;
+      return null;
     } else {
-      return metricsTable.memstoreGetCount;
+      return metricsTable.storeMemstoreGetCount;
     }
   }
 
   @Override
-  public long getFileRequestCount(String table) {
+  public Map<String, Long> getFileRequestCount(String table) {
     MetricsTableValues metricsTable = metricsTableMap.get(TableName.valueOf(table));
     if (metricsTable == null) {
-      return 0;
+      return null;
     } else {
-      return metricsTable.fileGetCount;
+      return metricsTable.storeFileGetCount;
     }
   }
 
@@ -318,8 +327,8 @@ public class MetricsTableWrapperAggregateImpl implements MetricsTableWrapperAggr
     long totalStoreFileAge;
     long referenceFileCount;
     long cpRequestCount;
-    long memstoreGetCount;
-    long fileGetCount;
+    Map<String, Long> storeMemstoreGetCount = new HashMap<>();
+    Map<String, Long> storeFileGetCount = new HashMap<>();
   }
 
 }
