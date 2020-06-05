@@ -145,6 +145,22 @@
       <groupId>io.jaegertracing</groupId>
       <version>1.1.0</version>
     </dependency>-->
+    <!-- <dependency>
+ <groupId>io.opentelemetry</groupId>
+ <artifactId>opentelemetry-sdk</artifactId>
+ <version>0.3.0</version>
+</dependency> -->
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-opentracing-shim</artifactId>
+      <version>0.3.0</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/io.opentelemetry/opentelemetry-api -->
+    <!-- <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-api</artifactId>
+        <version>0.3.0</version>
+    </dependency> -->
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-annotations</artifactId>
@@ -249,12 +265,12 @@
         <version>1.1.0</version>
         <scope>compile</scope>
       </dependency>-->
-      <dependency>
-        <groupId>io.jaegertracing</groupId>
-        <artifactId>jaeger-thrift</artifactId>
-        <version>1.1.0</version>
-        
-      </dependency>
+<!--      <dependency>-->
+<!--        <groupId>io.jaegertracing</groupId>-->
+<!--        <artifactId>jaeger-thrift</artifactId>-->
+<!--        <version>1.1.0</version>-->
+<!--        -->
+<!--      </dependency>-->
   </dependencies>
 
   <profiles>

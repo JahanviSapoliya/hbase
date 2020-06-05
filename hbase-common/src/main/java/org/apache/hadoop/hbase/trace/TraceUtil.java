@@ -1,22 +1,36 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
  */
 package org.apache.hadoop.hbase.trace;
 
+import io.jaegertracing.Configuration.ReporterConfiguration;
+import io.jaegertracing.Configuration.SamplerConfiguration;
+import io.jaegertracing.Configuration.SenderConfiguration;
+import io.jaegertracing.internal.senders.SenderResolver;
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.mock.MockTracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.propagation.TextMapExtractAdapter;
+import io.opentracing.propagation.TextMapInjectAdapter;
+import io.opentracing.util.GlobalTracer;
+import io.opentelemetry.opentracingshim.TraceShim;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,32 +38,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.htrace.core.SpanReceiver;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.hbase.thirdparty.com.google.common.annotations.VisibleForTesting;
 
-import io.jaegertracing.Configuration.ReporterConfiguration;
-import io.jaegertracing.Configuration.SamplerConfiguration;
-import io.jaegertracing.Configuration.SenderConfiguration;
-import io.jaegertracing.internal.senders.SenderResolver;
-import io.opentracing.Scope;
-import io.opentracing.ScopeManager;
-import io.opentracing.Span;
-import io.opentracing.SpanContext;
-import io.opentracing.Tracer;
-import io.opentracing.contrib.tracerresolver.TracerConverter;
-import io.opentracing.mock.MockTracer;
-import io.opentracing.noop.NoopScopeManager;
-import io.opentracing.noop.NoopSpanBuilder;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.propagation.Format;
-import io.opentracing.propagation.TextMapExtractAdapter;
-import io.opentracing.propagation.TextMapInjectAdapter;
-import io.opentracing.util.GlobalTracer;
+;
 
 /**
  * This wrapper class provides functions for accessing htrace 4+ functionality in a simplified way.
@@ -81,7 +77,8 @@ public final class TraceUtil {
           if(serviceName.equalsIgnoreCase("RegionServer")) {
             conf.withSampler(Sampler.ALWAYS);
             conf.withReporter(ReporterConfiguration.fromEnv().withLogSpans(true));
-           tracer = conf.getTracerBuilder().build();
+//           tracer = conf.getTracerBuilder().build();
+           tracer =TracerShim.createTracerShim();
           } else {
           tracer = conf.getTracerBuilder().build();
           }
@@ -110,36 +107,48 @@ public final class TraceUtil {
     return tracer;
   }
   
-  static class NoopTracer implements Tracer {
-    
+//  static class NoopTracer implements Tracer {
+//
+//
+//    @Override
+//    public ScopeManager scopeManager() {
+//        return NoopScopeManager.INSTANCE;
+//    }
+//
+//    @Override
+//    public Span activeSpan() {
+//        return null;
+//    }
+//
+//    @Override
+//    public SpanBuilder buildSpan(String operationName) { return NoopSpanBuilder.INSTANCE; }
+//
+//    @Override
+//    public <C> void inject(SpanContext spanContext, Format<C> format, C carrier) {}
+//
+//    @Override
+//    public <C> SpanContext extract(Format<C> format, C carrier) { return NoopSpanBuilder.INSTANCE; }
+//
+//    @Override
+//    public String toString() { return NoopTracer.class.getSimpleName(); }
+//
+//  }
 
-    @Override
-    public ScopeManager scopeManager() {
-        return NoopScopeManager.INSTANCE;
-    }
+  /*
+   * static class NoopTracer implements Tracer {
+   * @Override public ScopeManager scopeManager() { return NoopScopeManager.INSTANCE; }
+   * @Override public Span activeSpan() { return null; }
+   * @Override public SpanBuilder buildSpan(String operationName) { return NoopSpanBuilder.INSTANCE;
+   * }
+   * @Override public <C> void inject(SpanContext spanContext, Format<C> format, C carrier) {}
+   * @Override public <C> SpanContext extract(Format<C> format, C carrier) { return
+   * NoopSpanBuilder.INSTANCE; }
+   * @Override public String toString() { return NoopTracer.class.getSimpleName(); } }
+   */
 
-    @Override
-    public Span activeSpan() {
-        return null;
-    }
-
-    @Override
-    public SpanBuilder buildSpan(String operationName) { return NoopSpanBuilder.INSTANCE; }
-
-    @Override
-    public <C> void inject(SpanContext spanContext, Format<C> format, C carrier) {}
-
-    @Override
-    public <C> SpanContext extract(Format<C> format, C carrier) { return NoopSpanBuilder.INSTANCE; }
-
-    @Override
-    public String toString() { return NoopTracer.class.getSimpleName(); }
-    
-  }
-  
   public static void convert() {
     LOG.info("Updating the tracer");
-    tracer = new NoopTracer();
+//    tracer = new NoopTracer();
   }
 
   
@@ -148,7 +157,12 @@ public final class TraceUtil {
    * @return Scope or null when not tracing
    */
   public static Scope createRootTrace(String description) {
-    return (getTracer() == null) ? null : getTracer().buildSpan(description).startActive(true);
+//    return (getTracer() == null) ? null : getTracer().buildSpan(description).startActive(true);
+    Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).start();
+    if(span != null) {
+      return getTracer().scopeManager().activate(span);
+    }
+    return null;
   }
 
   /**
@@ -159,7 +173,12 @@ public final class TraceUtil {
     if (getTracer().activeSpan() == null) {
       //LOG.warn("no existing span. Please trace the code and find out where to initialize the span " +description);
     }
-    return (getTracer() == null) ? null : getTracer().buildSpan(description).startActive(true);
+//    return (getTracer() == null) ? null : getTracer().buildSpan(description).startActive(true);
+    Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).start();
+    if(span != null) {
+      return getTracer().scopeManager().activate(span);
+    }
+    return null;
   }
 
   /**
@@ -172,16 +191,27 @@ public final class TraceUtil {
     if (span == null) {
       return createTrace(description);
     }
-    return (getTracer() == null) ? null
-        : getTracer().buildSpan(description).asChildOf(span).startActive(true);
-
+//    return (getTracer() == null) ? null
+//        : getTracer().buildSpan(description).asChildOf(span).startActive(true);
+    span =  (getTracer() == null) ? null
+      : getTracer().buildSpan(description).asChildOf(span).start();
+    if(span != null) {
+      return getTracer().scopeManager().activate(span);
+    }
+    return null;
   }
 
   public static Scope createTrace(String description, SpanContext spanContext) {
     if(spanContext == null) return createTrace(description);
 
-    return (getTracer() == null) ? null : getTracer().buildSpan(description).
-        asChildOf(spanContext).startActive(true);
+//    return (getTracer() == null) ? null : getTracer().buildSpan(description).
+//        asChildOf(spanContext).startActive(true);
+    Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).
+      asChildOf(spanContext).start();
+    if(span != null) {
+      return getTracer().scopeManager().activate(span);
+    }
+    return null;
   }
 
   public static void main(String[] args) {
@@ -267,14 +297,13 @@ public final class TraceUtil {
 
     SpanContext context = null;
     ByteArrayInputStream stream = new ByteArrayInputStream(byteArray);
+  try {
+    ObjectInputStream objStream= new ObjectInputStream(stream);
+    TextMapExtractAdapter carrier = new TextMapExtractAdapter((Map<String, String>) objStream.readObject());
 
-    try {
-      ObjectInputStream objStream = new ObjectInputStream(stream);
-      Map<String, String> carrier = (Map<String, String>) objStream.readObject();
-
-      context =
-          tracer.extract(Format.Builtin.TEXT_MAP, new TextMapExtractAdapter(carrier));
-    } catch (Exception e) {
+    context = tracer.extract(Format.Builtin.TEXT_MAP_EXTRACT, carrier);
+    carrier.iterator();
+  }catch (Exception e) {
       LOG.warn("Could not deserialize context {}", e);
     }
 
@@ -288,7 +317,9 @@ public final class TraceUtil {
     }
 
     Map<String, String> carrier = new HashMap<String, String>();
-    tracer.inject(context, Format.Builtin.TEXT_MAP, new TextMapInjectAdapter(carrier));
+//    tracer.inject(context, Format.Builtin.TEXT_MAP, new TextMapInjectAdapter(carrier));
+    tracer.inject(context, Format.Builtin.TEXT_MAP_INJECT, new TextMapInjectAdapter(carrier));
+
     if (carrier.isEmpty()) {
       LOG.warn("SpanContext was not properly injected by the Tracer.");
       return null;

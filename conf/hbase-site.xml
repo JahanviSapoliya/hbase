@@ -21,14 +21,7 @@
  */
 -->
 <configuration>
-  <property>
-    <name>hbase.rootdir</name>
-    <value>file:///Users/weichiu/hbase_home</value>
-  </property>
-  <property>
-    <name>hbase.zookeeper.property.dataDir</name>
-    <value>/Users/weichiu/zookeeper_data</value>
-  </property>
+
   <property>
     <name>hbase.unsafe.stream.capability.enforce</name>
     <value>false</value>
@@ -44,10 +37,14 @@
       likely not a false positive.
     </description>
   </property>
-	<!--<property>
+<property>
 	  <name>hbase.cluster.distributed</name>
-	  <value>true</value>
-	</property>-->
+	  <value>false</value>
+	</property>
+	<property>
+	  <name>hbase.tmp.dir</name>
+	  <value>/tmp</value>
+	</property>
 
 <!--<property>
   <name>hbase.rootdir</name>

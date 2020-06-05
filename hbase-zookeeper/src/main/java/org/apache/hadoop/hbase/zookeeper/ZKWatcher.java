@@ -484,7 +484,9 @@ public class ZKWatcher implements Watcher, Abortable, Closeable {
         "state=" + event.getState() + ", " +
         "path=" + event.getPath()));
 
-    try (Scope scope = TraceUtil.getTracer().scopeManager().activate(span, false)) {
+//    try (Scope scope = TraceUtil.getTracer().scopeManager().activate(span, false)) {
+    try (Scope scope = TraceUtil.getTracer().scopeManager().activate(span)) {
+
       switch(event.getType()) {
 
       // If event type is NONE, this is a connection status change

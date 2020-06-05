@@ -176,8 +176,10 @@ public final class ReadOnlyZKClient implements Closeable {
 
         @Override
         public void exec(ZooKeeper alwaysNull) {
-          try (Scope scope = TraceUtil.getTracer().scopeManager().activate(span, true)) {
-            pendingRequests--;
+
+//          try (Scope scope = TraceUtil.getTracer().scopeManager().activate(span, true)) {
+          try (Scope scope =TraceUtil.getTracer().scopeManager().activate(span)){
+          pendingRequests--;
             Code code = Code.get(rc);
             if (code == Code.OK) {
               future.complete(ret);
@@ -268,7 +270,8 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-    try (Scope scope = TraceUtil.getTracer().buildSpan("ReadOnlyZKClient.get").startActive(false)) {
+//    try (Scope scope = TraceUtil.getTracer().buildSpan("ReadOnlyZKClient.get").startActive(false)) {
+    try (Scope scope =TraceUtil.createTrace("ReadOnlyZKClient.get")){
       CompletableFuture<byte[]> future = new CompletableFuture<>();
       tasks.add(new ZKTask<byte[]>(path, future, "get") {
 
@@ -285,8 +288,10 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-    try (Scope scope = TraceUtil.getTracer().buildSpan("ReadOnlyZKClient.exists").startActive(false)) {
-      CompletableFuture<Stat> future = new CompletableFuture<>();
+//    try (Scope scope = TraceUtil.getTracer().buildSpan("ReadOnlyZKClient.exists").startActive(false)) {
+    try (Scope scope = TraceUtil.createTrace("ReadOnlyZKClient.exists")) {
+
+        CompletableFuture<Stat> future = new CompletableFuture<>();
       tasks.add(new ZKTask<Stat>(path, future, "exists") {
 
         @Override protected void doExec(ZooKeeper zk) {
@@ -302,8 +307,10 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-    try (Scope scope = TraceUtil.getTracer().buildSpan("ReadOnlyZKClient.list").startActive(false)) {
-      CompletableFuture<List<String>> future = new CompletableFuture<>();
+//    try (Scope scope = TraceUtil.getTracer().buildSpan("ReadOnlyZKClient.list").startActive(false)) {
+    try (Scope scope = TraceUtil.createTrace("ReadOnlyZKClient.list")) {
+
+        CompletableFuture<List<String>> future = new CompletableFuture<>();
       tasks.add(new ZKTask<List<String>>(path, future, "list") {
 
         @Override protected void doExec(ZooKeeper zk) {
