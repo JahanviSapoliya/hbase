@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import net.spy.memcached.CachedData;
 import net.spy.memcached.ConnectionFactoryBuilder;
 import net.spy.memcached.FailureMode;
@@ -42,6 +43,7 @@ import org.apache.hadoop.hbase.nio.ByteBuff;
 import org.apache.hadoop.hbase.nio.SingleByteBuff;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Addressing;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,8 +132,8 @@ public class MemcachedBlockCache implements BlockCache {
                             boolean repeat, boolean updateCacheMetrics) {
     // Assume that nothing is the block cache
     HFileBlock result = null;
-
-    try (Scope traceScope = TraceUtil.createTrace("MemcachedBlockCache.getBlock")) {
+    Pair<Scope, Span> SSPair=TraceUtil.createTrace("MemcachedBlockCache.getBlock");
+    try {
       result = client.get(cacheKey.toString(), tc);
     } catch (Exception e) {
       // Catch a pretty broad set of exceptions to limit any changes in the memecache client
@@ -151,6 +153,8 @@ public class MemcachedBlockCache implements BlockCache {
           cacheStats.hit(caching, cacheKey.isPrimary(), cacheKey.getBlockType());
         }
       }
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
 
     return result;
