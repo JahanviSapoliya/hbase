@@ -37,6 +37,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.apache.hadoop.hbase.testclassification.MiscTests;
+import org.apache.hadoop.hbase.util.Pair;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -80,11 +81,16 @@ public class TestOpenTracingHooks {
   public void testTraceCreateTable() throws Exception {
     Table table;
     MockSpan createTableSpan;
-    try (Scope scope = TraceUtil.createTrace("creating table")) {
+    Pair<Scope, Span> SSPair =TraceUtil.createTrace("creating table");
+    try {
       createTableSpan = (MockSpan)TraceUtil.getTracer().scopeManager().activeSpan();
       table = TEST_UTIL.createTable(TableName.valueOf(name.getMethodName()), FAMILY_BYTES);
     }
-
+    finally
+    {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
+    }
     // Some table creation is async.  Need to make sure that everything is full in before
     // checking to see if the spans are there.
     TEST_UTIL.waitFor(10000, new Waiter.Predicate<Exception>() {
@@ -115,10 +121,14 @@ public class TestOpenTracingHooks {
     put.addColumn(FAMILY_BYTES, "col".getBytes(), "value".getBytes());
 
     MockSpan putSpan;
-
-    try (Scope scope = TraceUtil.createTrace("doing put")) {
+    SSPair =TraceUtil.createTrace("doing put");
+    try {
       putSpan = (MockSpan)TraceUtil.getTracer().scopeManager().activeSpan();
       table.put(put);
+    }finally
+    {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
 
     spans = tracer.finishedSpans();
