@@ -75,6 +75,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import io.opentracing.Span;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -920,7 +921,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     MonitoredTask status = TaskMonitor.get().createStatus("Initializing region " + this);
     status.enableStatusJournal(true);
     long nextSeqId = -1;
-    try (Scope scope = TraceUtil.createTrace("Initializing region " + this)) {
+    Pair<Scope, Span> SSPair=TraceUtil.createTrace("Initializing region " + this);
+
+    try{
       nextSeqId = initializeRegionInternals(reporter, status);
       return nextSeqId;
     } catch (IOException e) {
@@ -950,6 +953,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         LOG.debug("Region open journal:\n" + status.prettyPrintJournal());
       }
       status.cleanup();
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 
@@ -1560,8 +1565,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         (abort ? " due to abort" : ""));
     status.enableStatusJournal(true);
     status.setStatus("Waiting for close lock");
-    try (Scope scope = TraceUtil.createTrace("Closing region " +
-      this.getRegionInfo().getEncodedName() + (abort ? " due to abort" : ""))) {
+    Pair<Scope,Span> SSPair=TraceUtil.createTrace("Closing region " + this.getRegionInfo().getEncodedName() + (abort ? " due to abort" : ""));
+
+    try {
       synchronized (closeLock) {
         return doClose(abort, status);
       }
@@ -1570,6 +1576,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         LOG.debug("Region close journal:\n" + status.prettyPrintJournal());
       }
       status.cleanup();
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 
@@ -4804,7 +4812,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
 
     status.setStatus("Opening recovered edits");
     WAL.Reader reader = null;
-    try (Scope scope = TraceUtil.createTrace(msg)) {
+    Pair<Scope,Span> SSPair=TraceUtil.createTrace(msg);
+
+    try{
       reader = WALFactory.createReader(fs, edits, conf);
       long currentEditSeqId = -1;
       long currentReplaySeqId = -1;
@@ -4990,6 +5000,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       if (reader != null) {
          reader.close();
       }
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 
@@ -5127,7 +5139,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     // we will use writestate as a coarse-grain lock for all the replay events
     // (flush, compaction, region open etc)
     synchronized (writestate) {
-      try (Scope scope = TraceUtil.createTrace("Preparing flush " + this)) {
+      Pair<Scope,Span> SSPair = TraceUtil.createTrace("Preparing flush " + this);
+      try {
         if (flush.getFlushSequenceNumber() < lastReplayedOpenRegionSeqId) {
           LOG.warn(getRegionInfo().getEncodedName() + " : "
               + "Skipping replaying flush event :" + TextFormat.shortDebugString(flush)
@@ -5211,6 +5224,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       } finally {
         status.cleanup();
         writestate.notifyAll();
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
     }
     return null;
@@ -5227,7 +5242,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     // region server crashes. In those cases, we may receive replay requests out of order from
     // the original seqIds.
     synchronized (writestate) {
-      try (Scope scope = TraceUtil.createTrace("Committing flush" + this)) {
+      Pair<Scope,Span> SSPair=TraceUtil.createTrace("Committing flush" + this);
+      try{
         if (flush.getFlushSequenceNumber() < lastReplayedOpenRegionSeqId) {
           LOG.warn(getRegionInfo().getEncodedName() + " : "
             + "Skipping replaying flush event :" + TextFormat.shortDebugString(flush)
@@ -5325,6 +5341,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       finally {
         status.cleanup();
         writestate.notifyAll();
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
     }
 
@@ -5980,7 +5998,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     RowLockImpl result = null;
 
     boolean success = false;
-    try (Scope scope = TraceUtil.createTrace("HRegion.getRowLock")) {
+    Pair<Scope,Span> SSPair=TraceUtil.createTrace("HRegion.getRowLock");
+    try {
       TraceUtil.addTimelineAnnotation("Getting a " + (readLock?"readLock":"writeLock"));
       // Keep trying until we have a lock or error out.
       // TODO: do we need to add a time component here?
@@ -6051,6 +6070,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       if (!success && rowLockContext != null) {
         rowLockContext.cleanUp();
       }
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 

@@ -38,6 +38,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.FutureUtils;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.zookeeper.KeeperException;
@@ -268,7 +269,8 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-    try (Scope scope = TraceUtil.createTrace("ReadOnlyZKClient.get")) {
+    Pair<Scope,Span> SSPair =TraceUtil.createTrace("ReadOnlyZKClient.get");
+    try {
       CompletableFuture<byte[]> future = new CompletableFuture<>();
       tasks.add(new ZKTask<byte[]>(path, future, "get") {
 
@@ -279,13 +281,20 @@ public final class ReadOnlyZKClient implements Closeable {
       });
       return future;
     }
+    finally
+    {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
+    }
   }
 
   public CompletableFuture<Stat> exists(String path) {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-    try (Scope scope = TraceUtil.createTrace("ReadOnlyZKClient.exists")) {
+    Pair<Scope,Span> SSPair =TraceUtil.createTrace("ReadOnlyZKClient.exists");
+
+    try  {
       CompletableFuture<Stat> future = new CompletableFuture<>();
       tasks.add(new ZKTask<Stat>(path, future, "exists") {
 
@@ -296,13 +305,19 @@ public final class ReadOnlyZKClient implements Closeable {
       });
       return future;
     }
+    finally
+    {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
+    }
   }
 
   public CompletableFuture<List<String>> list(String path) {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-    try (Scope scope = TraceUtil.createTrace("ReadOnlyZKClient.list")) {
+    Pair<Scope,Span> SSPair=TraceUtil.createTrace("ReadOnlyZKClient.list");
+    try {
       CompletableFuture<List<String>> future = new CompletableFuture<>();
       tasks.add(new ZKTask<List<String>>(path, future, "list") {
 
@@ -314,6 +329,10 @@ public final class ReadOnlyZKClient implements Closeable {
       });
 
       return future;
+    }
+    finally{
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 

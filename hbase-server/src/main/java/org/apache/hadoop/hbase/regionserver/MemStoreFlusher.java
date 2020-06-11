@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.DroppedSnapshotException;
 import org.apache.hadoop.hbase.HConstants;
@@ -48,6 +49,7 @@ import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.HasThread;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.ServerRegionReplicaUtil;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.ipc.RemoteException;
@@ -698,7 +700,8 @@ class MemStoreFlusher implements FlushRequester {
    * amount of memstore consumption.
    */
   public void reclaimMemStoreMemory() {
-    try (Scope scope = TraceUtil.createTrace("MemStoreFluser.reclaimMemStoreMemory")) {
+    Pair<Scope, Span> SSPair = TraceUtil.createTrace("MemStoreFluser.reclaimMemStoreMemory");
+    try {
       FlushType flushType = isAboveHighWaterMark();
       if (flushType != FlushType.NORMAL) {
         TraceUtil.addTimelineAnnotation("Force Flush. We're above high water mark.");
@@ -773,6 +776,11 @@ class MemStoreFlusher implements FlushRequester {
           wakeupFlushThread();
         }
       }
+    }
+    finally
+    {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 
