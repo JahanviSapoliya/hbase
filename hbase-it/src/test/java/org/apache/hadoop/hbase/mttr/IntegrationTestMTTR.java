@@ -68,6 +68,7 @@ import org.apache.hadoop.hbase.trace.AlwaysSampler;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.LoadTestTool;
+import org.apache.hadoop.hbase.util.Pair;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -430,10 +431,10 @@ public class IntegrationTestMTTR {
       while (numAfterDone < maxIterations) {
         long start = System.nanoTime();
         Span span = null;
-        try (Scope scope = TraceUtil.createTrace(getSpanName())) {
-          if (scope != null) {
-//            span = scope.span();
-              span = TraceUtil.getTracer().scopeManager().activeSpan();
+        Pair<Scope, Span> SSPair= TraceUtil.createTrace(getSpanName());
+        try {
+          if (SSPair.getFirst() != null) {
+            span =  TraceUtil.getTracer().scopeManager().activeSpan();
           }
           boolean actionResult = doAction();
           if (actionResult && future.isDone()) {
@@ -480,6 +481,11 @@ public class IntegrationTestMTTR {
             LOG.info("Too many unexpected Exceptions. Aborting.", e);
             throw e;
           }
+        }
+        finally
+        {
+          SSPair.getFirst().close();
+          SSPair.getSecond().finish();
         }
         result.addResult(System.nanoTime() - start, span);
       }

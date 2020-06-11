@@ -48,6 +48,7 @@ import io.jaegertracing.Configuration.SamplerConfiguration;
 import io.jaegertracing.internal.samplers.ConstSampler;
 import io.jaegertracing.internal.senders.SenderResolver;
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -1352,8 +1353,14 @@ public class PerformanceEvaluation extends Configured implements Tool {
           if (i % everyN != 0) continue;
           long startTime = System.nanoTime();
           boolean requestSent = false;
-          try (Scope scope = TraceUtil.createTrace("test row");){
+          Pair<Scope, Span> SSPair=TraceUtil.createTrace("test row");
+          try {
             requestSent = testRow(i);
+          }
+          finally
+          {
+            SSPair.getFirst().close();
+            SSPair.getSecond().finish();
           }
           if ( (i - startRow) > opts.measureAfter) {
             // If multiget or multiput is enabled, say set to 10, testRow() returns immediately

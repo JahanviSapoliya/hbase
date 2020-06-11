@@ -39,6 +39,7 @@ import java.util.stream.IntStream;
 
 import io.jaegertracing.internal.samplers.ConstSampler;
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.util.GlobalTracer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -68,6 +69,7 @@ import org.apache.hadoop.hbase.trace.SpanReceiverHost;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSUtils;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.WALProvider.Writer;
 import org.apache.hadoop.util.Tool;
@@ -172,16 +174,16 @@ public final class WALPerformanceEvaluation extends Configured implements Tool {
       byte[] value = new byte[valueSize];
       Random rand = new Random(Thread.currentThread().getId());
       WAL wal = region.getWAL();
-
-      try (Scope threadScope = TraceUtil.createTrace("WALPerfEval." + Thread.currentThread().getName())) {
+      Pair<Scope, Span> SSPair=TraceUtil.createTrace("WALPerfEval." + Thread.currentThread().getName());
+      try {
         long startTime = System.currentTimeMillis();
         int lastSync = 0;
         //TraceUtil.addSampler(loopSampler);
         for (int i = 0; i < numIterations; ++i) {
-//          assert GlobalTracer.get().activeSpan().equals(threadScope.span()) : "Span leak detected.";
           assert TraceUtil.getTracer().activeSpan()
-            .equals(TraceUtil.getTracer().scopeManager().activeSpan()) : "Span leak detected.";
-          try (Scope loopScope = TraceUtil.createTrace("runLoopIter" + i)) {
+              .equals(TraceUtil.getTracer().scopeManager().activeSpan()) : "Span leak detected.";
+          Pair<Scope, Span> SSPairloop=TraceUtil.createTrace("runLoopIter" + i);
+          try {
             long now = System.nanoTime();
             Put put = setupPut(rand, key, value, numFamilies);
             WALEdit walEdit = new WALEdit();
@@ -198,9 +200,19 @@ public final class WALPerformanceEvaluation extends Configured implements Tool {
             }
             latencyHistogram.update(System.nanoTime() - now);
           }
+          finally
+          {
+            SSPairloop.getFirst().close();
+            SSPairloop.getSecond().finish();
+          }
         }
       } catch (Exception e) {
         LOG.error(getClass().getSimpleName() + " Thread failed", e);
+      }
+      finally
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
     }
   }
@@ -318,7 +330,7 @@ public final class WALPerformanceEvaluation extends Configured implements Tool {
         sampler = trace ? Sampler.ALWAYS : Sampler.NEVER;
     TraceUtil.initTracer(getConf(), "WALPutBenchmark");
     //TraceUtil.addSampler(sampler);
-    Scope scope = TraceUtil.createTrace("WALPerfEval");
+    Pair<Scope, Span> SSPair=TraceUtil.createTrace("WALPerfEval");
 
     try {
       rootRegionDir = rootRegionDir.makeQualified(fs.getUri(), fs.getWorkingDirectory());
@@ -391,8 +403,9 @@ public final class WALPerformanceEvaluation extends Configured implements Tool {
       if (!noclosefs) {
         fs.close();
       }
-      if (scope != null) {
-        scope.close();
+      if (SSPair.getFirst() != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
       if (receiverHost != null) {
         receiverHost.closeReceivers();

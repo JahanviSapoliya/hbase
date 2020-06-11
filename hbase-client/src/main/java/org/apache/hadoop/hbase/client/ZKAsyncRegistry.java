@@ -55,7 +55,8 @@ import org.apache.hadoop.hbase.shaded.protobuf.generated.ZooKeeperProtos;
  * Zookeeper based registry implementation.
  */
 @InterfaceAudience.Private
-class ZKAsyncRegistry implements AsyncRegistry {
+class
+ZKAsyncRegistry implements AsyncRegistry {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZKAsyncRegistry.class);
 
@@ -98,8 +99,14 @@ class ZKAsyncRegistry implements AsyncRegistry {
 
   @Override
   public CompletableFuture<String> getClusterId() {
-    try (Scope scope = TraceUtil.createTrace("getClusterId")) {
+    Pair<Scope,Span> SSPair=TraceUtil.createTrace("getClusterId");
+    try {
       return getAndConvert(znodePaths.clusterIdZNode, ZKAsyncRegistry::getClusterId);
+    }
+    finally
+    {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
     }
   }
 

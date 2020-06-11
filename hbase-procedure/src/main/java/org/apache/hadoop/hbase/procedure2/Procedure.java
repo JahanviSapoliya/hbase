@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.util.GlobalTracer;
@@ -147,7 +146,7 @@ public abstract class Procedure<TEnvironment> implements Comparable<Procedure<TE
 
   private boolean lockedWhenLoading = false;
 
-  protected SpanContext spanContext=null;
+  protected SpanContext spanContext = null;
 
   public Procedure() {
     Span activeSpan = GlobalTracer.get().activeSpan();
