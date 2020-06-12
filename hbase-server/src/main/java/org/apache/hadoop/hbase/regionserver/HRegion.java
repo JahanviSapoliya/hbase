@@ -21,7 +21,6 @@ import static org.apache.hadoop.hbase.HConstants.REPLICATION_SCOPE_LOCAL;
 import static org.apache.hadoop.hbase.regionserver.HStoreFile.MAJOR_COMPACTION_KEY;
 import static org.apache.hadoop.hbase.util.ConcurrentMapUtils.computeIfAbsent;
 
-import com.sun.deploy.trace.Trace;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.opentracing.Scope;
 
@@ -5997,8 +5996,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
 
     RowLockContext rowLockContext = null;
     RowLockImpl result = null;
-    TraceUtil.addTimelineAnnotation("In the table "+this.getTableDescriptor().getTableName()+"For row "+row.toString()+" getting the row lock");
-    TraceUtil.addKVAnnotation("Rowlock",);
+
     boolean success = false;
     Pair<Scope,Span> SSPair=TraceUtil.createTrace("HRegion.getRowLock");
     try {
@@ -6056,7 +6054,6 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       LOG.warn("Thread interrupted waiting for lock on row: " + rowKey);
       InterruptedIOException iie = new InterruptedIOException();
       iie.initCause(ie);
-      TraceUtil.addKVAnnotation("execption" ,"getting rowlock for "+row.toString());
       TraceUtil.addTimelineAnnotation("Interrupted exception getting row lock");
       Thread.currentThread().interrupt();
       throw iie;
@@ -6066,7 +6063,6 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       // go ahead to process the minibatch with lock acquired.
       LOG.warn("Error to get row lock for " + Bytes.toStringBinary(row) + ", cause: " + error);
       IOException ioe = new IOException(error);
-      TraceUtil.addKVAnnotation("Error" ,"getting rowlock for "+row.toString());
       TraceUtil.addTimelineAnnotation("Error getting row lock");
       throw ioe;
     } finally {
@@ -6074,7 +6070,6 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       if (!success && rowLockContext != null) {
         rowLockContext.cleanUp();
       }
-      TraceUtil.addTimelineAnnotation("got the row lock");
       SSPair.getFirst().close();
       SSPair.getSecond().finish();
     }
