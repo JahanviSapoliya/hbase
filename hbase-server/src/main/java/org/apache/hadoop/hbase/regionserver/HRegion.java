@@ -5998,8 +5998,10 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     RowLockImpl result = null;
 
     boolean success = false;
+
     Pair<Scope,Span> SSPair=TraceUtil.createTrace("HRegion.getRowLock");
     try {
+      TraceUtil.addTimelineAnnotation("getting rowlock for "+this.getTableDescriptor().getTableName()+" for row "+Bytes.toString(row));
       TraceUtil.addTimelineAnnotation("Getting a " + (readLock?"readLock":"writeLock"));
       // Keep trying until we have a lock or error out.
       // TODO: do we need to add a time component here?
@@ -6054,6 +6056,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       LOG.warn("Thread interrupted waiting for lock on row: " + rowKey);
       InterruptedIOException iie = new InterruptedIOException();
       iie.initCause(ie);
+      TraceUtil.addKVAnnotation("InterruptedException","for Table "+this.getTableDescriptor().getTableName()+" for row "+row.toString());
       TraceUtil.addTimelineAnnotation("Interrupted exception getting row lock");
       Thread.currentThread().interrupt();
       throw iie;
@@ -6063,6 +6066,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       // go ahead to process the minibatch with lock acquired.
       LOG.warn("Error to get row lock for " + Bytes.toStringBinary(row) + ", cause: " + error);
       IOException ioe = new IOException(error);
+      TraceUtil.addKVAnnotation("Error","for Table "+this.getTableDescriptor().getTableName()+" for row "+row.toString());
+
       TraceUtil.addTimelineAnnotation("Error getting row lock");
       throw ioe;
     } finally {

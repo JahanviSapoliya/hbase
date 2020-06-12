@@ -95,7 +95,7 @@ public final class TraceUtil {
 
           tracer = TraceShim.createTracerShim(tracerProvider, new CorrelationContextManagerSdk());
           break;
-        case HBASE_OPENTRACING_MOCKTRACER:
+          case HBASE_OPENTRACING_MOCKTRACER:
           tracer = new MockTracer();
           break;
         default:
