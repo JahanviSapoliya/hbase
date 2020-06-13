@@ -1371,8 +1371,11 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
         //traceScope.getFirst().close();
         //traceScope.getSecond().finish();
       }
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 

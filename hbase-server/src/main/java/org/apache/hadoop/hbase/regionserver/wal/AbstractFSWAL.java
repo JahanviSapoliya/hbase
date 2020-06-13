@@ -781,15 +781,17 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
    */
   @VisibleForTesting
   Path replaceWriter(Path oldPath, Path newPath, W nextWriter) throws IOException {
-    Pair<Scope, Span> SSPair =TraceUtil.createTrace("FSHFile.replaceWriter");
 
+    Pair<Scope, Span> SSPair = null;
     try {
+      SSPair = TraceUtil.createTrace("FSHFile.replaceWriter");
       doReplaceWriter(oldPath, newPath, nextWriter);
       return newPath;
-    }
-    finally{
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+    } finally {
+      if (SSPair != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 
@@ -840,8 +842,9 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
         return null;
       }
       byte[][] regionsToFlush = null;
-      Pair<Scope,Span> SSPair = TraceUtil.createTrace("FSHLog.rollWriter");
+      Pair<Scope, Span> SSPair = null;
       try {
+        SSPair = TraceUtil.createTrace("FSHLog.rollWriter");
         Path oldPath = getOldPath();
         Path newPath = getNewPath();
         // Any exception from here on is catastrophic, non-recoverable so we currently abort.
@@ -851,8 +854,7 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
         newPath = replaceWriter(oldPath, newPath, nextWriter);
         tellListenersAboutPostLogRoll(oldPath, newPath);
         if (LOG.isDebugEnabled()) {
-          LOG.debug("Create new " + implClassName + " writer with pipeline: " +
-            Arrays.toString(getPipeline()));
+          LOG.debug("Create new " + implClassName + " writer with pipeline: " + Arrays.toString(getPipeline()));
         }
         // We got a new writer, so reset the slow sync count
         lastTimeCheckSlowSync = EnvironmentEdgeManager.currentTime();
@@ -865,14 +867,13 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
       } catch (CommonFSUtils.StreamLacksCapabilityException exception) {
         // If the underlying FileSystem can't do what we ask, treat as IO failure so
         // we'll abort.
-        throw new IOException(
-            "Underlying FileSystem can't meet stream requirements. See RS log " + "for details.",
-            exception);
-      }
-      finally
-      {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
+        throw new IOException("Underlying FileSystem can't meet stream requirements. See RS log " + "for details.",
+          exception);
+      } finally {
+        if (SSPair != null) {
+          SSPair.getFirst().close();
+          SSPair.getSecond().finish();
+        }
       }
       return regionsToFlush;
     } finally {
@@ -1089,15 +1090,19 @@ public abstract class AbstractFSWAL<W extends WriterBase> implements WAL {
     long txid = txidHolder.longValue();
     ServerCall<?> rpcCall = RpcServer.getCurrentCall().filter(c -> c instanceof ServerCall)
       .filter(c -> c.getCellScanner() != null).map(c -> (ServerCall) c).orElse(null);
-    Pair<Scope,Span> SSPair=TraceUtil.createTrace(implClassName + ".append");
+    Pair<Scope, Span> SSPair = null;
     try {
+      SSPair = TraceUtil.createTrace(implClassName + ".append");
       FSWALEntry entry = new FSWALEntry(txid, key, edits, hri, inMemstore, rpcCall);
       entry.stampRegionSequenceId(we);
       ringBuffer.get(txid).load(entry);
     } finally {
       ringBuffer.publish(txid);
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
     return txid;
   }

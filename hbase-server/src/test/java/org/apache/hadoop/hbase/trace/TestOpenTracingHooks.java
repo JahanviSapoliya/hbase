@@ -81,15 +81,17 @@ public class TestOpenTracingHooks {
   public void testTraceCreateTable() throws Exception {
     Table table;
     MockSpan createTableSpan;
-    Pair<Scope, Span> SSPair =TraceUtil.createTrace("creating table");
+    Pair<Scope, Span> SSPair = null;
     try {
-      createTableSpan = (MockSpan)TraceUtil.getTracer().scopeManager().activeSpan();
+      SSPair = TraceUtil.createTrace("creating table");
+      createTableSpan = (MockSpan) TraceUtil.getTracer().scopeManager().activeSpan();
       table = TEST_UTIL.createTable(TableName.valueOf(name.getMethodName()), FAMILY_BYTES);
-    }
-    finally
-    {
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+    } finally {
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
     // Some table creation is async.  Need to make sure that everything is full in before
     // checking to see if the spans are there.
@@ -106,8 +108,6 @@ public class TestOpenTracingHooks {
     TraceTree traceTree = new TraceTree(spans);
     roots.addAll(traceTree.getSpansByParent().find(createTableSpan.context().spanId()));
 
-
-
     // Roots was made 3 in hbase2. It used to be 1. We changed it back to 1 on upgrade to
     // htrace-4.2 just to get the test to pass (traces are not wholesome in hbase2; TODO).
     assertEquals(1, roots.size());
@@ -121,12 +121,11 @@ public class TestOpenTracingHooks {
     put.addColumn(FAMILY_BYTES, "col".getBytes(), "value".getBytes());
 
     MockSpan putSpan;
-    SSPair =TraceUtil.createTrace("doing put");
     try {
-      putSpan = (MockSpan)TraceUtil.getTracer().scopeManager().activeSpan();
+      SSPair = TraceUtil.createTrace("doing put");
+      putSpan = (MockSpan) TraceUtil.getTracer().scopeManager().activeSpan();
       table.put(put);
-    }finally
-    {
+    } finally {
       SSPair.getFirst().close();
       SSPair.getSecond().finish();
     }
