@@ -209,17 +209,19 @@ public class TestProcedureExecutor {
     Procedure[] procs;
     MockSpan procedureParentSpan;
     // create the root span and initialize Procedure objects
-    Pair<Scope, Span> SSPair=TraceUtil.createTrace("create procedure");
+    Pair<Scope, Span> SSPair = null;
     try {
-      procedureParentSpan = (MockSpan)TraceUtil.getTracer().scopeManager().activeSpan();
+      SSPair = TraceUtil.createTrace("create procedure");
+      procedureParentSpan = (MockSpan) TraceUtil.getTracer().scopeManager().activeSpan();
       procs = new Procedure[1];
       for (int i = 0; i < procs.length; ++i) {
         procs[i] = new NoopProcedure<TestProcEnv>();
       }
-    }
-    finally{
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+    } finally {
+      if (SSPair != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
 
     // submit procedures
@@ -234,14 +236,13 @@ public class TestProcedureExecutor {
     }
 
     // there are two spans: one root span, and the other is for executing the procedure
-    MockTracer tracer = (MockTracer)TraceUtil.getTracer();
+    MockTracer tracer = (MockTracer) TraceUtil.getTracer();
     List<MockSpan> spans = tracer.finishedSpans();
     assertEquals(spans.size(), 2);
 
     // make sure the child span is for the NoopProcedure
     TraceTree traceTree = new TraceTree(spans);
-    List<MockSpan> roots = new LinkedList<>(traceTree.getSpansByParent()
-      .find(procedureParentSpan.context().spanId()));
+    List<MockSpan> roots = new LinkedList<>(traceTree.getSpansByParent().find(procedureParentSpan.context().spanId()));
     assertEquals(roots.size(), 1);
     assertEquals(roots.get(0).operationName(), procs[0].getProcName());
   }

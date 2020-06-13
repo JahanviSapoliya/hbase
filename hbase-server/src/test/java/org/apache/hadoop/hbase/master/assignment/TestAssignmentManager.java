@@ -267,20 +267,24 @@ public class TestAssignmentManager extends TestAssignmentManagerBase {
     TableName tableName = TableName.valueOf("trace");
     RegionInfo hri = createRegionInfo(tableName, 1);
     rsDispatcher.setMockRsExecutor(new GoodRsExecutor());
-    Pair<Scope, Span> SSPair=TraceUtil.createTrace("Testtrace");
-    try  {
+    Pair<Scope, Span> SSPair = null;
+    try {
+      SSPair = TraceUtil.createTrace("Testtrace");
       am.assign(hri);
-    }finally{
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+    } finally {
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
 
-    MockTracer tracer = (MockTracer)TraceUtil.getTracer();
+    MockTracer tracer = (MockTracer) TraceUtil.getTracer();
     List<MockSpan> spans = tracer.finishedSpans();
 
     MockSpan rootSpan = null;
     TraceTree traceTree = new TraceTree(spans);
-    for (MockSpan span: spans) {
+    for (MockSpan span : spans) {
       if (span.operationName().equals("testTrace")) {
         rootSpan = span;
       }
@@ -288,21 +292,18 @@ public class TestAssignmentManager extends TestAssignmentManagerBase {
     assertNotNull(rootSpan);
     assertEquals(0, rootSpan.parentId()); // the span 'testTrace' is a root.
 
-    List<MockSpan> transitRegionStateProcedureSpan = new LinkedList<>(traceTree.getSpansByParent()
-      .find(rootSpan.context().spanId()));
+    List<MockSpan> transitRegionStateProcedureSpan = new LinkedList<>(traceTree.getSpansByParent().find(rootSpan.context().spanId()));
     assertEquals(transitRegionStateProcedureSpan.size(), 3);
 
     MockSpan transitionOpenSpan = null;
-    for (MockSpan span: transitRegionStateProcedureSpan) {
-      if (span.operationName().contains(TransitRegionStateProcedure.class.getSimpleName()) &&
-        span.operationName().contains("REGION_STATE_TRANSITION_OPEN")) {
+    for (MockSpan span : transitRegionStateProcedureSpan) {
+      if (span.operationName().contains(TransitRegionStateProcedure.class.getSimpleName()) && span.operationName().contains("REGION_STATE_TRANSITION_OPEN")) {
         transitionOpenSpan = span;
       }
     }
     assertNotNull(transitionOpenSpan);
 
-    List<MockSpan> openRegionProcedureSpans = new LinkedList<>(traceTree.getSpansByParent()
-      .find(transitionOpenSpan.context().spanId()));
+    List<MockSpan> openRegionProcedureSpans = new LinkedList<>(traceTree.getSpansByParent().find(transitionOpenSpan.context().spanId()));
     assertEquals(2, openRegionProcedureSpans.size());
     assertTrue(openRegionProcedureSpans.get(0).operationName().contains(OpenRegionProcedure.class.getName()));
   }
