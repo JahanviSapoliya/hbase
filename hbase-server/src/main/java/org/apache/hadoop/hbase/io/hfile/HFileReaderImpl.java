@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Optional;
+import com.sun.deploy.trace.Trace;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -1190,6 +1191,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
   @Override
   public HFileBlock getMetaBlock(String metaBlockName, boolean cacheBlock)
       throws IOException {
+
     if (trailer.getMetaIndexCount() == 0) {
       return null; // there are no meta blocks
     }
@@ -1210,34 +1212,47 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
     // single-level.
     synchronized (metaBlockIndexReader.getRootBlockKey(block)) {
       // Check cache for block. If found return.
-      long metaBlockOffset = metaBlockIndexReader.getRootBlockOffset(block);
-      BlockCacheKey cacheKey =
+      Pair<Scope, Span> SSPair = null;
+      try {
+        SSPair = TraceUtil.createTrace("HfilereaderIMPL:GetMetaBlock");
+        long metaBlockOffset = metaBlockIndexReader.getRootBlockOffset(block);
+        BlockCacheKey cacheKey =
           new BlockCacheKey(name, metaBlockOffset, this.isPrimaryReplicaReader(), BlockType.META);
 
-      cacheBlock &= cacheConf.shouldCacheBlockOnRead(BlockType.META.getCategory());
-      HFileBlock cachedBlock =
+        cacheBlock &= cacheConf.shouldCacheBlockOnRead(BlockType.META.getCategory());
+        HFileBlock cachedBlock =
           getCachedBlock(cacheKey, cacheBlock, false, true, true, BlockType.META, null);
-      if (cachedBlock != null) {
-        assert cachedBlock.isUnpacked() : "Packed block leak.";
-        // Return a distinct 'shallow copy' of the block,
-        // so pos does not get messed by the scanner
-        return cachedBlock;
-      }
-      // Cache Miss, please load.
+        if (cachedBlock != null) {
+          assert cachedBlock.isUnpacked() : "Packed block leak.";
+          // Return a distinct 'shallow copy' of the block,
+          // so pos does not get messed by the scanner
+          TraceUtil.addTimelineAnnotation("Cache hit: Metablock");
+          return cachedBlock;
+        }
+        // Cache Miss, please load.
+        TraceUtil.addTimelineAnnotation("Cache miss: Metablock");
 
-      HFileBlock compressedBlock =
+        HFileBlock compressedBlock =
           fsBlockReader.readBlockData(metaBlockOffset, blockSize, true, false, true);
-      HFileBlock uncompressedBlock = compressedBlock.unpack(hfileContext, fsBlockReader);
-      if (compressedBlock != uncompressedBlock) {
-        compressedBlock.release();
-      }
+        HFileBlock uncompressedBlock = compressedBlock.unpack(hfileContext, fsBlockReader);
+        if (compressedBlock != uncompressedBlock) {
+          compressedBlock.release();
+        }
 
-      // Cache the block
-      if (cacheBlock) {
-        cacheConf.getBlockCache().ifPresent(
-          cache -> cache.cacheBlock(cacheKey, uncompressedBlock, cacheConf.isInMemory()));
+        // Cache the block
+        if (cacheBlock) {
+          cacheConf.getBlockCache().ifPresent(
+            cache -> cache.cacheBlock(cacheKey, uncompressedBlock, cacheConf.isInMemory()));
+          TraceUtil.addTimelineAnnotation("Cache miss(Metablock) => cached the block now");
+        }
+        return uncompressedBlock;
+      } finally {
+        if(SSPair!=null)
+        {
+          SSPair.getFirst().close();
+          SSPair.getSecond().finish();
+        }
       }
-      return uncompressedBlock;
     }
   }
 
@@ -1365,11 +1380,6 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
     } finally {
       if (lockEntry != null) {
         offsetLock.releaseLockEntry(lockEntry);
-      }
-      if (traceScope != null) {
-        traceScope.close();
-        //traceScope.getFirst().close();
-        //traceScope.getSecond().finish();
       }
       if(SSPair!=null)
       {
