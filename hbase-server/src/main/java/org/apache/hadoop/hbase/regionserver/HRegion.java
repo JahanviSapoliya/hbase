@@ -2993,8 +2993,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
   private RegionScannerImpl getScanner(Scan scan, List<KeyValueScanner> additionalScanners,
       long nonceGroup, long nonce) throws IOException {
     startRegionOperation(Operation.SCAN);
-    Pair<Scope,Span> SSPair=TraceUtil.createTrace("geting Region Scanner ");
+    Pair<Scope, Span> SSPair = null;
     try {
+      SSPair = TraceUtil.createTrace("geting Region Scanner ");
       // Verify families are all valid
       if (!scan.hasFamilies()) {
         // Adding all families to scanner
@@ -3011,8 +3012,11 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       return instantiateRegionScanner(scan, additionalScanners, nonceGroup, nonce);
     } finally {
       closeRegionOperation(Operation.SCAN);
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+
+      if (SSPair != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 
@@ -5995,8 +5999,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     Pair<Scope, Span> SSPair = null;
     try {
       SSPair = TraceUtil.createTrace("HRegion.getRowLock");
-      TraceUtil.addTimelineAnnotation(
-        "getting rowlock for " + this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row));
+      TraceUtil.addKVAnnotation("azurecheck","getting rowlock for " + this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row));
       TraceUtil.addTimelineAnnotation("Getting a " + (readLock ? "readLock" : "writeLock"));
       // Keep trying until we have a lock or error out.
       // TODO: do we need to add a time component here?

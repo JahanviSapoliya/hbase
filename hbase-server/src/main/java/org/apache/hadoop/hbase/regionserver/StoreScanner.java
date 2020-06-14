@@ -26,6 +26,8 @@ import java.util.NavigableSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellComparator;
 import org.apache.hadoop.hbase.CellUtil;
@@ -44,7 +46,9 @@ import org.apache.hadoop.hbase.regionserver.handler.ParallelSeekHandler;
 import org.apache.hadoop.hbase.regionserver.querymatcher.CompactionScanQueryMatcher;
 import org.apache.hadoop.hbase.regionserver.querymatcher.ScanQueryMatcher;
 import org.apache.hadoop.hbase.regionserver.querymatcher.UserScanQueryMatcher;
+import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.yetus.audience.InterfaceAudience;
 
 import org.slf4j.Logger;
@@ -890,7 +894,9 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     }
     boolean updateReaders = false;
     flushLock.lock();
+    Pair<Scope, Span> SSPair= null;
     try {
+      SSPair= TraceUtil.createTrace("Storescanners:UpdateReaders (closing scanners)");
       if (!closeLock.tryLock()) {
         // The reason for doing this is that when the current store scanner does not retrieve
         // any new cells, then the scanner is considered to be done. The heap of this scanner
@@ -929,6 +935,11 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
       flushLock.unlock();
       if (updateReaders) {
         closeLock.unlock();
+      }
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
     }
     // Let the next() call handle re-creating and seeking
