@@ -1225,11 +1225,11 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
           assert cachedBlock.isUnpacked() : "Packed block leak.";
           // Return a distinct 'shallow copy' of the block,
           // so pos does not get messed by the scanner
-          TraceUtil.addTimelineAnnotation("Cache hit: Metablock");
+          TraceUtil.addKVAnnotation("azure check","Cache hit: Metablock");
           return cachedBlock;
         }
         // Cache Miss, please load.
-        TraceUtil.addTimelineAnnotation("Cache miss: Metablock");
+        TraceUtil.addKVAnnotation("azure check","Cache miss: Metablock");
 
         HFileBlock compressedBlock =
           fsBlockReader.readBlockData(metaBlockOffset, blockSize, true, false, true);
@@ -1242,7 +1242,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
         if (cacheBlock) {
           cacheConf.getBlockCache().ifPresent(
             cache -> cache.cacheBlock(cacheKey, uncompressedBlock, cacheConf.isInMemory()));
-          TraceUtil.addTimelineAnnotation("Cache miss(Metablock) => cached the block now");
+          TraceUtil.addKVAnnotation("azure check","Cache miss(Metablock) => cached the block now");
         }
         return uncompressedBlock;
       } finally {
@@ -1320,7 +1320,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
             if (LOG.isTraceEnabled()) {
               LOG.trace("From Cache " + cachedBlock);
             }
-            TraceUtil.addTimelineAnnotation("blockCacheHit");
+            TraceUtil.addKVAnnotation("azure check","BlockCacheHit");
             assert cachedBlock.isUnpacked() : "Packed block leak.";
             if (cachedBlock.getBlockType().isData()) {
               if (updateCacheMetrics) {
@@ -1350,10 +1350,11 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
           // Carry on, please load.
         }
 
-        TraceUtil.addTimelineAnnotation("blockCacheMiss");
+        TraceUtil.addKVAnnotation("azure check","blockCacheMiss");
         // Load block from filesystem.
         HFileBlock hfileBlock = fsBlockReader.readBlockData(dataBlockOffset, onDiskBlockSize, pread,
-          !isCompaction, shouldUseHeap(expectedBlockType));
+          !isCompaction, shouldUseHeap(expectedBlockType),SSPair.getSecond());
+        //add path
         validateBlockType(hfileBlock, expectedBlockType);
         HFileBlock unpacked = hfileBlock.unpack(hfileContext, fsBlockReader);
         BlockType.BlockCategory category = hfileBlock.getBlockType().getCategory();
