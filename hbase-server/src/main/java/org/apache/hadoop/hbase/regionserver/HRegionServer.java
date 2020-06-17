@@ -57,7 +57,6 @@ import java.util.function.Function;
 import javax.management.MalformedObjectNameException;
 import javax.servlet.http.HttpServlet;
 
-import com.sun.deploy.trace.Trace;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import org.apache.commons.lang3.RandomUtils;
@@ -74,6 +73,8 @@ import org.apache.hadoop.hbase.ClockOutOfSyncException;
 import org.apache.hadoop.hbase.CoordinatedStateManager;
 import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.ExecutorStatusChore;
+
+
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.HConstants;
