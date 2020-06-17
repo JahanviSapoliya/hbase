@@ -5999,7 +5999,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     Pair<Scope, Span> SSPair = null;
     try {
       SSPair = TraceUtil.createTrace("HRegion.getRowLock");
-      TraceUtil.addKVAnnotation("azurecheck","getting rowlock for " + this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row));
+      TraceUtil.addKVAnnotation("azure check","getting rowlock for " + this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row));
       TraceUtil.addTimelineAnnotation("Getting a " + (readLock ? "readLock" : "writeLock"));
       // Keep trying until we have a lock or error out.
       // TODO: do we need to add a time component here?
@@ -6083,11 +6083,21 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
   }
 
   private void releaseRowLocks(List<RowLock> rowLocks) {
-    if (rowLocks != null) {
-      for (RowLock rowLock : rowLocks) {
-        rowLock.release();
+    Pair<Scope, Span> SSPair = null;
+    try{
+        SSPair = TraceUtil.createTrace("HRegion.ReleaseRowLocks");
+        if (rowLocks != null) {
+        for (RowLock rowLock : rowLocks) {
+          TraceUtil.addKVAnnotation("azure check","Releasing rowlocks for " + this.getTableDescriptor().getTableName());
+          rowLock.release();
+        }
+        rowLocks.clear();
       }
-      rowLocks.clear();
+    }finally {
+      if (SSPair != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 

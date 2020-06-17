@@ -29,12 +29,16 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.concurrent.atomic.LongAdder;
 
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellComparator;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.PrivateCellUtil;
+import org.apache.hadoop.hbase.trace.TraceUtil;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 import org.apache.hadoop.hbase.client.Scan;
@@ -119,15 +123,16 @@ public class StoreFileScanner implements KeyValueScanner {
     }
     List<StoreFileScanner> scanners = new ArrayList<>(files.size());
     boolean canOptimizeForNonNullColumn = matcher != null ? !matcher.hasNullColumnInQuery() : false;
-    PriorityQueue<HStoreFile> sortedFiles =
-        new PriorityQueue<>(files.size(), StoreFileComparators.SEQ_ID);
+    PriorityQueue<HStoreFile> sortedFiles = new PriorityQueue<>(files.size(), StoreFileComparators.SEQ_ID);
     for (HStoreFile file : files) {
       // The sort function needs metadata so we need to open reader first before sorting the list.
       file.initReader();
       sortedFiles.add(file);
     }
     boolean succ = false;
+    Pair<Scope, Span> SSPair=null;
     try {
+      SSPair= TraceUtil.createTrace("StoreFileScanner:getScannersForStoreFiles");
       for (int i = 0, n = files.size(); i < n; i++) {
         HStoreFile sf = sortedFiles.remove();
         StoreFileScanner scanner;
@@ -137,6 +142,7 @@ public class StoreFileScanner implements KeyValueScanner {
           scanner = sf.getStreamScanner(canUseDrop, cacheBlocks, isCompaction, readPt, i,
               canOptimizeForNonNullColumn);
         }
+        TraceUtil.addKVAnnotation("azure check","got StoreFileScanner for "+sf.getFileInfo().getHFileInfo().getHFileContext().getHFileName());
         scanners.add(scanner);
       }
       succ = true;
@@ -145,6 +151,11 @@ public class StoreFileScanner implements KeyValueScanner {
         for (StoreFileScanner scanner : scanners) {
           scanner.close();
         }
+      }
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
     }
     return scanners;

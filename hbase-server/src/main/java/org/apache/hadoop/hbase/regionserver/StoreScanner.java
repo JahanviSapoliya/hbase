@@ -241,7 +241,9 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     store.addChangedReaderObserver(this);
 
     List<KeyValueScanner> scanners = null;
+    Pair<Scope,Span> SSPair=null;
     try {
+      SSPair=TraceUtil.createTrace("Get scanner across memstore, snapshot, storefiles");
       // Pass columns to try to filter out unnecessary StoreFiles.
       scanners = selectScannersFrom(store,
         store.getScanners(cacheBlocks, scanUsePread, false, matcher, scan.getStartRow(),
@@ -268,6 +270,12 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
       // and might cause memory leak
       store.deleteChangedReaderObserver(this);
       throw e;
+    }finally{
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 

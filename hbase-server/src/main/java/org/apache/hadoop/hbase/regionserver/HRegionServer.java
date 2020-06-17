@@ -57,7 +57,6 @@ import java.util.function.Function;
 import javax.management.MalformedObjectNameException;
 import javax.servlet.http.HttpServlet;
 
-import com.sun.deploy.trace.Trace;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import org.apache.commons.lang3.RandomUtils;
@@ -74,6 +73,8 @@ import org.apache.hadoop.hbase.ClockOutOfSyncException;
 import org.apache.hadoop.hbase.CoordinatedStateManager;
 import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.ExecutorStatusChore;
+
+
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.HConstants;
@@ -1817,6 +1818,9 @@ public class HRegionServer extends HasThread implements
     @Override
     protected void chore() {
       final StringBuilder whyFlush = new StringBuilder();
+      Pair<Scope, Span> SSPair = null;
+      try{
+      SSPair = TraceUtil.createTrace("Scheduled chore:Periodic MEmstore Flusher chore");
       for (HRegion r : this.server.onlineRegions.values()) {
         if (r == null) continue;
         if (r.shouldFlush(whyFlush)) {
@@ -1827,11 +1831,17 @@ public class HRegionServer extends HasThread implements
             //is a balanced write-load on the regions in a table, we might end up
             //overwhelming the filesystem with too many flushes at once.
             if (requester.requestDelayedFlush(r, randomDelay, false)) {
-              LOG.info("{} requesting flush of {} because {} after random delay {} ms",
-                  getName(), r.getRegionInfo().getRegionNameAsString(),  whyFlush.toString(),
-                  randomDelay);
+              LOG.info("{} requesting flush of {} because {} after random delay {} ms", getName(),
+                r.getRegionInfo().getRegionNameAsString(), whyFlush.toString(), randomDelay);
             }
           }
+        }
+      }
+    }finally {
+        if(SSPair!=null)
+        {
+          SSPair.getFirst().close();
+          SSPair.getSecond().finish();
         }
       }
     }
