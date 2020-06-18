@@ -243,7 +243,7 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     List<KeyValueScanner> scanners = null;
     Pair<Scope,Span> SSPair=null;
     try {
-      SSPair=TraceUtil.createTrace("Get scanner across memstore, snapshot, storefiles");
+      SSPair=TraceUtil.createTrace("Get scanner across store");
       // Pass columns to try to filter out unnecessary StoreFiles.
       scanners = selectScannersFrom(store,
         store.getScanners(cacheBlocks, scanUsePread, false, matcher, scan.getStartRow(),

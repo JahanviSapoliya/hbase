@@ -39,6 +39,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.PrivateCellUtil;
 import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.util.Time;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.apache.yetus.audience.InterfaceStability;
 import org.apache.hadoop.hbase.client.Scan;
@@ -132,7 +133,7 @@ public class StoreFileScanner implements KeyValueScanner {
     boolean succ = false;
     Pair<Scope, Span> SSPair=null;
     try {
-      SSPair= TraceUtil.createTrace("StoreFileScanner:getScannersForStoreFiles");
+      SSPair= TraceUtil.createTrace("StoreFileScanner: get Scanners For StoreFiles");
       for (int i = 0, n = files.size(); i < n; i++) {
         HStoreFile sf = sortedFiles.remove();
         StoreFileScanner scanner;
@@ -142,7 +143,8 @@ public class StoreFileScanner implements KeyValueScanner {
           scanner = sf.getStreamScanner(canUseDrop, cacheBlocks, isCompaction, readPt, i,
               canOptimizeForNonNullColumn);
         }
-        TraceUtil.addKVAnnotation("azure check","got StoreFileScanner for "+sf.getFileInfo().getHFileInfo().getHFileContext().getHFileName());
+        TraceUtil.addKVAnnotation(
+          Time.formatTime(Time.monotonicNow()),"got StoreFileScanner for "+scanner.getFilePath());
         scanners.add(scanner);
       }
       succ = true;
