@@ -49,6 +49,7 @@ import org.apache.hadoop.hbase.util.IdLock;
 import org.apache.hadoop.hbase.util.ObjectIntPair;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.util.Time;
 import org.apache.htrace.core.TraceScope;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
@@ -1303,8 +1304,14 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
     Scope traceScope = null;
     Pair<Scope,Span> SSPair=null;
 
+    try{
+      throw new IOException("throwing from ReadBlock");
+    }catch(Exception e){e.printStackTrace();}
+
+
     try {
       SSPair = TraceUtil.createTrace("HFileReaderImpl.readBlock");
+      TraceUtil.addKVAnnotation("BlockType", String.valueOf(expectedBlockType.getCategory()));
       traceScope=SSPair.getFirst();
       while (true) {
         // Check cache for block. If found return.
@@ -1320,7 +1327,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
             if (LOG.isTraceEnabled()) {
               LOG.trace("From Cache " + cachedBlock);
             }
-            TraceUtil.addKVAnnotation("azure check","BlockCacheHit");
+            TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"BlockCacheHit");
             assert cachedBlock.isUnpacked() : "Packed block leak.";
             if (cachedBlock.getBlockType().isData()) {
               if (updateCacheMetrics) {
@@ -1350,7 +1357,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
           // Carry on, please load.
         }
 
-        TraceUtil.addKVAnnotation("azure check","blockCacheMiss");
+        TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"BlockCacheMiss");
         // Load block from filesystem.
         HFileBlock hfileBlock = fsBlockReader.readBlockData(dataBlockOffset, onDiskBlockSize, pread,
           !isCompaction, shouldUseHeap(expectedBlockType),SSPair.getSecond());

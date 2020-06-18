@@ -56,6 +56,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.ChecksumType;
 import org.apache.hadoop.hbase.util.ClassSize;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.util.Time;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1889,7 +1890,6 @@ public class HFileBlock implements Cacheable {
       if(span ==null)
         return readBlockDataInternal(is,offset,onDiskSizeWithHeaderL,pread, verifyChecksum, updateMetrics,intoHeap);
 
-
       if (offset < 0) {
         throw new IOException("Invalid offset=" + offset + " trying to read "
           + "block (onDiskSize=" + onDiskSizeWithHeaderL + ")");
@@ -1919,13 +1919,17 @@ public class HFileBlock implements Cacheable {
             LOG.trace("Extra see to get block size!", new RuntimeException());
           }
           headerBuf = HEAP.allocate(hdrSize);
-          Scope scope = null;
+          Pair<Scope,Span> SSPair=null;
           try{
-            scope=TraceUtil.createTrace("HFileBlock:ReadBlockDataInternal:readAtOffset",span);
+            SSPair=TraceUtil.createTrace("HFileBlock:ReadBlockDataInternal:readAtOffset");
             readAtOffset(is, headerBuf, hdrSize, false, offset, pread);
-            TraceUtil.addKVAnnotation("azure check","Read header at path "+ this.pathName);
+            TraceUtil.addKVAnnotation(
+              Time.formatTime(Time.monotonicNow()),"Read header at path "+ this.pathName+" at offset "+offset);
           }finally{
-            scope.close();
+            if(SSPair!=null) {
+              SSPair.getFirst().close();
+              SSPair.getSecond().finish();
+            }
           }
           headerBuf.rewind();
         }
@@ -1945,15 +1949,18 @@ public class HFileBlock implements Cacheable {
           onDiskBlock.put(0, headerBuf, 0, hdrSize).position(hdrSize);
         }
         boolean readNextHeader;
-        Scope scope=null;
+        Pair<Scope,Span> SSPair=null;
         try{
-          scope =TraceUtil.createTrace("HFileBlock:ReadBlockDataInternal:readAtOffset",span);
+          SSPair =TraceUtil.createTrace("HFileBlock:ReadBlockDataInternal:readAtOffset");
           readNextHeader =
             readAtOffset(is, onDiskBlock, onDiskSizeWithHeader - preReadHeaderSize, true, offset + preReadHeaderSize, pread);
-            TraceUtil.addKVAnnotation("Azure check","Read next at path "+ this.pathName);
+            TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Read next at path "+ this.pathName+" offset "+offset);
         }finally
+        {if(SSPair!=null)
         {
-          scope.close();
+          SSPair.getFirst().close();
+          SSPair.getSecond().finish();
+        }
         }
         onDiskBlock.rewind(); // in case of moving position when copying a cached header
         int nextBlockOnDiskSize =

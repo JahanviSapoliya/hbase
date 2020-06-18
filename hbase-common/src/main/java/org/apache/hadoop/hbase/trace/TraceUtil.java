@@ -77,31 +77,32 @@ public final class TraceUtil {
     if (tracer == null && conf != null) {
       tracer = new Tracer.Builder("Tracer").conf(conf).build();
     }*/
-    
-    
-    conf = io.jaegertracing.Configuration.fromEnv(serviceName);
-    if (!GlobalTracer.isRegistered()) {
-      switch(c.get(HBASE_OPENTRACING_TRACER, HBASE_OPENTRACING_TRACER_DEFAULT)) {
-        case HBASE_OPENTRACING_TRACER_DEFAULT:
 
-          tracerProvider = TracerSdkProvider.builder().build();
-          ZipkinSpanExporter exporter =
-              ZipkinSpanExporter.newBuilder().setEndpoint("http://localhost:9411/api/v2/spans")
-                  .setServiceName(serviceName).build();
+    if(serviceName=="RegionServer") {
+      conf = io.jaegertracing.Configuration.fromEnv(serviceName);
+      if (!GlobalTracer.isRegistered()) {
+        switch (c.get(HBASE_OPENTRACING_TRACER, HBASE_OPENTRACING_TRACER_DEFAULT)) {
+          case HBASE_OPENTRACING_TRACER_DEFAULT:
 
-          // JaegerGrpcSpanExporter jaegerExporter = JaegerGrpcSpanExporter.newBuilder()
-          // .setServiceName(serviceName).setDeadlineMs(30000).build();
-          tracerProvider.addSpanProcessor(SimpleSpanProcessor.newBuilder(exporter).build());
+            tracerProvider = TracerSdkProvider.builder().build();
+            ZipkinSpanExporter exporter =
+              ZipkinSpanExporter.newBuilder().setEndpoint("http://localhost:9411/api/v2/spans").setServiceName(serviceName).build();
 
-          tracer = TraceShim.createTracerShim(tracerProvider, new CorrelationContextManagerSdk());
-          break;
+            // JaegerGrpcSpanExporter jaegerExporter = JaegerGrpcSpanExporter.newBuilder()
+            // .setServiceName(serviceName).setDeadlineMs(30000).build();
+            tracerProvider.addSpanProcessor(SimpleSpanProcessor.newBuilder(exporter).build());
+
+            tracer = TraceShim.createTracerShim(tracerProvider, new CorrelationContextManagerSdk());
+
+            break;
           case HBASE_OPENTRACING_MOCKTRACER:
-          tracer = new MockTracer();
-          break;
-        default:
-          throw new RuntimeException("Unexpected tracer");
+            tracer = new MockTracer();
+            break;
+          default:
+            throw new RuntimeException("Unexpected tracer");
+        }
+        LOG.debug("The tracer is " + tracer + " " + serviceName);
       }
-      LOG.debug("The tracer is "+tracer + " "+serviceName);
     }
   }
 
