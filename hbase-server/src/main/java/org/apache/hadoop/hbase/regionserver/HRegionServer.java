@@ -1756,9 +1756,9 @@ public class HRegionServer extends HasThread implements
 
     @Override
     protected void chore() {
-      Pair<Scope, Span> SSPair=null;
-      try {
-        SSPair = TraceUtil.createTrace("HRegionServer:Scheduled_Chore:Compaction_checker");
+//      Pair<Scope, Span> SSPair=null;
+//      try {
+//        SSPair = TraceUtil.createTrace("HRegionServer:Scheduled_Chore:Compaction_checker");
         for (Region r : this.instance.onlineRegions.values()) {
           if (r == null) {
             continue;
@@ -1790,13 +1790,13 @@ public class HRegionServer extends HasThread implements
           }
         }
         iteration = (iteration == Long.MAX_VALUE) ? 0 : (iteration + 1);
-      }finally{
-        if(SSPair!=null)
-        {
-          SSPair.getFirst().close();
-          SSPair.getSecond().finish();
-        }
-      }
+//      }finally{
+//        if(SSPair!=null)
+//        {
+//          SSPair.getFirst().close();
+//          SSPair.getSecond().finish();
+//        }
+//      }
     }
   }
 
@@ -1818,9 +1818,9 @@ public class HRegionServer extends HasThread implements
     @Override
     protected void chore() {
       final StringBuilder whyFlush = new StringBuilder();
-      Pair<Scope, Span> SSPair = null;
-      try{
-      SSPair = TraceUtil.createTrace("Scheduled chore:Periodic MEmstore Flusher chore");
+//      Pair<Scope, Span> SSPair = null;
+//      try{
+//      SSPair = TraceUtil.createTrace("Scheduled chore:Periodic MEmstore Flusher chore");
       for (HRegion r : this.server.onlineRegions.values()) {
         if (r == null) continue;
         if (r.shouldFlush(whyFlush)) {
@@ -1837,13 +1837,13 @@ public class HRegionServer extends HasThread implements
           }
         }
       }
-    }finally {
-        if(SSPair!=null)
-        {
-          SSPair.getFirst().close();
-          SSPair.getSecond().finish();
-        }
-      }
+//    }finally {
+//        if(SSPair!=null)
+//        {
+//          SSPair.getFirst().close();
+//          SSPair.getSecond().finish();
+//        }
+//      }
     }
   }
 
