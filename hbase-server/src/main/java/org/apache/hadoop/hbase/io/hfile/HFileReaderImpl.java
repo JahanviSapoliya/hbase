@@ -1287,8 +1287,11 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
     boolean useLock = false;
     IdLock.Entry lockEntry = null;
     Scope traceScope = null;
+    Pair<Scope,Span> SSPair=null;
+
     try {
-    traceScope = TraceUtil.createTrace("HFileReaderImpl.readBlock");
+      SSPair = TraceUtil.createTrace("HFileReaderImpl.readBlock");
+      traceScope=SSPair.getFirst();
       while (true) {
         // Check cache for block. If found return.
         if (cacheConf.shouldReadBlockFromCache(expectedBlockType)) {
@@ -1367,6 +1370,11 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
         traceScope.close();
         //traceScope.getFirst().close();
         //traceScope.getSecond().finish();
+      }
+      if(SSPair!=null)
+      {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
       }
     }
   }

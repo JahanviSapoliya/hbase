@@ -95,7 +95,7 @@ public final class TraceUtil {
 
           tracer = TraceShim.createTracerShim(tracerProvider, new CorrelationContextManagerSdk());
           break;
-        case HBASE_OPENTRACING_MOCKTRACER:
+          case HBASE_OPENTRACING_MOCKTRACER:
           tracer = new MockTracer();
           break;
         default:
@@ -149,13 +149,15 @@ public final class TraceUtil {
    * Wrapper method to create new Scope with the given description
    * @return Scope or null when not tracing
    */
-  public static Scope createTrace(String description) {
+  
+  public static Pair<Scope,Span> createTrace(String description) {
     if (getTracer().activeSpan() == null) {
       //LOG.warn("no existing span. Please trace the code and find out where to initialize the span " +description);
     }
     Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).start();
+    Pair<Scope,Span> SSPair = new Pair (getTracer().scopeManager().activate(span),span);
     if(span != null) {
-      return getTracer().scopeManager().activate(span);
+      return SSPair;
     }
     return null;
   }
@@ -168,22 +170,27 @@ public final class TraceUtil {
    */
   public static Scope createTrace(String description, Span span) {
     if (span == null) {
-      return createTrace(description);
+      return createTrace(description).getFirst();
     }
     span =  (getTracer() == null) ? null
         : getTracer().buildSpan(description).asChildOf(span).start();
+//    Pair<Scope,Span> SSPair = new Pair (getTracer().scopeManager().activate(span),span);
+
     if(span != null) {
+//      return SSPair;
       return getTracer().scopeManager().activate(span);
     }
     return null;
   }
 
   public static Scope createTrace(String description, SpanContext spanContext) {
-    if(spanContext == null) return createTrace(description);
+    if(spanContext == null) return createTrace(description).getFirst();
 
     Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).
         asChildOf(spanContext).start();
+//    Pair<Scope,Span> SSPair = new Pair (getTracer().scopeManager().activate(span),span);
     if(span != null) {
+//      return SSPair;
       return getTracer().scopeManager().activate(span);
     }
     return null;
@@ -192,11 +199,13 @@ public final class TraceUtil {
   public static void main(String[] args) {
     // SenderResolver.resolve();
     TraceUtil.initTracer(new Configuration(), "test");
-    Scope scope = null;
+    Pair<Scope,Span> SSPair=null;
     try {
-      scope = createTrace("test");
+      SSPair = createTrace("test");
       addTimelineAnnotation("testmsg");
     } finally {
+      SSPair.getFirst().close();
+      SSPair.getSecond().finish();
       //scope.().finish();
     }
   }
