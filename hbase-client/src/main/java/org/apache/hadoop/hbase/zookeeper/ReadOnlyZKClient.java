@@ -261,6 +261,7 @@ public final class ReadOnlyZKClient implements Closeable {
 
     @Override
     public void closed(IOException e) {
+//      this.span.finish();
       future.completeExceptionally(e);
     }
   }
@@ -399,6 +400,7 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.compareAndSet(false, true)) {
       LOG.debug("Close zookeeper connection {} to {}", getId(), connectString);
       tasks.add(CLOSE);
+
     }
   }
 

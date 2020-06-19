@@ -524,7 +524,6 @@ public class ZKWatcher implements Watcher, Abortable, Closeable {
       default:
         throw new IllegalStateException("Received event is not valid: " + event.getState());
       }
-//    }
   }
 
   // Connection management

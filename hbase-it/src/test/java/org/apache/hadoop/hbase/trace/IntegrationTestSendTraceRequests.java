@@ -187,7 +187,7 @@ public class IntegrationTestSendTraceRequests extends AbstractHBaseTool {
             Pair<Scope, Span> SSPair = null;
             try {
               SSPair = TraceUtil.createTrace("gets");
-              long rk=rowKeyQueue.take();
+             long rk=rowKeyQueue.take();
               Result r1 = ht.get(new Get(Bytes.toBytes(rk)));
               if (r1 != null) {
                 accum |= Bytes.toLong(r1.getRow());

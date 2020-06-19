@@ -100,6 +100,7 @@ import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.NotServingRegionException;
 import org.apache.hadoop.hbase.PrivateCellUtil;
 import org.apache.hadoop.hbase.RegionTooBusyException;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.Tag;
 import org.apache.hadoop.hbase.TagUtil;
 import org.apache.hadoop.hbase.UnknownScannerException;
@@ -184,6 +185,7 @@ import org.apache.hadoop.hbase.wal.WALSplitUtil;
 import org.apache.hadoop.hbase.wal.WALSplitUtil.MutationReplay;
 import org.apache.hadoop.io.MultipleIOException;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.util.Time;
 import org.apache.yetus.audience.InterfaceAudience;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -922,9 +924,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     status.enableStatusJournal(true);
     long nextSeqId = -1;
 
-    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> SSPair = null;
     try {
-      SSPair = TraceUtil.createTrace("Initializing region " + this);
+//      SSPair = TraceUtil.createTrace("Initializing region " + this);
       nextSeqId = initializeRegionInternals(reporter, status);
       return nextSeqId;
     } catch (IOException e) {
@@ -952,10 +954,10 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         LOG.debug("Region open journal:\n" + status.prettyPrintJournal());
       }
       status.cleanup();
-      if (SSPair != null) {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
-      }
+//      if (SSPair != null) {
+//        SSPair.getFirst().close();
+//        SSPair.getSecond().finish();
+//      }
     }
   }
 
@@ -1566,10 +1568,10 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     status.enableStatusJournal(true);
     status.setStatus("Waiting for close lock");
 
-    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> SSPair = null;
     try {
-      SSPair = TraceUtil.createTrace(
-        "Closing region " + this.getRegionInfo().getEncodedName() + (abort ? " due to abort" : ""));
+//      SSPair = TraceUtil.createTrace(
+//        "Closing region " + this.getRegionInfo().getEncodedName() + (abort ? " due to abort" : ""));
       synchronized (closeLock) {
         return doClose(abort, status);
       }
@@ -1578,10 +1580,10 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         LOG.debug("Region close journal:\n" + status.prettyPrintJournal());
       }
       status.cleanup();
-      if (SSPair != null) {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
-      }
+//      if (SSPair != null) {
+//        SSPair.getFirst().close();
+//        SSPair.getSecond().finish();
+//      }
     }
   }
 
@@ -2993,26 +2995,52 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
   private RegionScannerImpl getScanner(Scan scan, List<KeyValueScanner> additionalScanners,
       long nonceGroup, long nonce) throws IOException {
     startRegionOperation(Operation.SCAN);
-    Pair<Scope,Span> SSPair=TraceUtil.createTrace("geting Region Scanner ");
+    Pair<Scope, Span> SSPair = null;
     try {
+      if(!this.getRegionInfo().getTable().isSystemTable())
+      {
+        SSPair = TraceUtil.createTrace("Creating Region Scanner ");}
       // Verify families are all valid
-      if (!scan.hasFamilies()) {
+      if (!scan.hasFamilies())
+      {
         // Adding all families to scanner
         for (byte[] family : this.htableDescriptor.getColumnFamilyNames()) {
           scan.addFamily(family);
         }
-        TraceUtil.addTimelineAnnotation("Added all families to scanner");
+        if(!this.getRegionInfo().getTable().isSystemTable())
+        {
+          TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Added all families to scanner for table: "
+          +this.htableDescriptor.getTableName() + " in region: " + this);
+          if(!TableName.isMetaTableName(this.getRegionInfo().getTable()))
+          {
+            TraceUtil.addKVAnnotation("Rows"," reading from " +
+              Bytes.toString(scan.getStartRow()) + " to " + Bytes.toString(scan.getStopRow()));
+          }
+        }
       } else {
         for (byte[] family : scan.getFamilyMap().keySet()) {
           checkFamily(family);
         }
-        TraceUtil.addTimelineAnnotation("Verified all the families in scanner");
+        if(!this.getRegionInfo().getTable().isSystemTable())
+        {
+
+          TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Verified all the families in scanner for table: "+
+          this.htableDescriptor.getTableName()+" in region "+this);
+          if(!TableName.isMetaTableName(this.getRegionInfo().getTable()))
+          {
+            TraceUtil.addKVAnnotation("Rows"," reading from " +
+              Bytes.toString(scan.getStartRow()) + " to " + Bytes.toString(scan.getStopRow()));
+          }
+        }
       }
       return instantiateRegionScanner(scan, additionalScanners, nonceGroup, nonce);
     } finally {
       closeRegionOperation(Operation.SCAN);
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+
+      if (SSPair != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 
@@ -4822,9 +4850,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     status.setStatus("Opening recovered edits");
     WAL.Reader reader = null;
 
-    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> SSPair = null;
     try {
-      SSPair = TraceUtil.createTrace(msg);
+//      SSPair = TraceUtil.createTrace(msg);
       reader = WALFactory.createReader(fs, edits, conf);
       long currentEditSeqId = -1;
       long currentReplaySeqId = -1;
@@ -5000,10 +5028,10 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       if (reader != null) {
         reader.close();
       }
-      if (SSPair != null) {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
-      }
+//      if (SSPair != null) {
+//        SSPair.getFirst().close();
+//        SSPair.getSecond().finish();
+//      }
     }
   }
 
@@ -5995,9 +6023,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     Pair<Scope, Span> SSPair = null;
     try {
       SSPair = TraceUtil.createTrace("HRegion.getRowLock");
-      TraceUtil.addTimelineAnnotation(
-        "getting rowlock for " + this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row));
-      TraceUtil.addTimelineAnnotation("Getting a " + (readLock ? "readLock" : "writeLock"));
+      TraceUtil.addKVAnnotation("Lock","Getting a " + (readLock ? "readLock" : "writeLock"));
+      TraceUtil.addKVAnnotation("Info","getting rowlock for " +
+        this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row)+" in region "+getRegionInfo().getEncodedName());
       // Keep trying until we have a lock or error out.
       // TODO: do we need to add a time component here?
       while (result == null) {
@@ -6033,7 +6061,8 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       }
 
       if (timeout <= 0 || !result.getLock().tryLock(timeout, TimeUnit.MILLISECONDS)) {
-        TraceUtil.addTimelineAnnotation("Failed to get row lock");
+        TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Failed to get row lock for "+
+          this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row)+" in region "+getRegionInfo().getEncodedName());
         String message =
           "Timed out waiting for lock for row: " + rowKey + " in region " + getRegionInfo().getEncodedName();
         if (reachDeadlineFirst) {
@@ -6052,7 +6081,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       iie.initCause(ie);
       TraceUtil.addKVAnnotation("InterruptedException",
         "for Table " + this.getTableDescriptor().getTableName() + " for row " + row.toString());
-      TraceUtil.addTimelineAnnotation("Interrupted exception getting row lock");
+      TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Interrupted exception getting row lock");
       Thread.currentThread().interrupt();
       throw iie;
     } catch (Error error) {
@@ -6064,14 +6093,14 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       TraceUtil.addKVAnnotation("Error",
         "for Table " + this.getTableDescriptor().getTableName() + " for row " + row.toString());
 
-      TraceUtil.addTimelineAnnotation("Error getting row lock");
+      TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Error getting row lock");
       throw ioe;
     } finally {
       // Clean up the counts just in case this was the thing keeping the context alive.
       if (!success && rowLockContext != null) {
         rowLockContext.cleanUp();
       }
-      TraceUtil.addTimelineAnnotation("Got the row lock");
+      TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Got the row lock");
       if (SSPair != null) {
         SSPair.getFirst().close();
         SSPair.getSecond().finish();
@@ -6080,11 +6109,22 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
   }
 
   private void releaseRowLocks(List<RowLock> rowLocks) {
-    if (rowLocks != null) {
-      for (RowLock rowLock : rowLocks) {
-        rowLock.release();
+    Pair<Scope, Span> SSPair = null;
+    try{
+        SSPair = TraceUtil.createTrace("HRegion.ReleaseRowLocks");
+        if (rowLocks != null) {
+        for (RowLock rowLock : rowLocks) {
+          TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Releasing rowlocks for "
+            + this.getTableDescriptor().getTableName());
+          rowLock.release();
+        }
+        rowLocks.clear();
       }
-      rowLocks.clear();
+    }finally {
+      if (SSPair != null) {
+        SSPair.getFirst().close();
+        SSPair.getSecond().finish();
+      }
     }
   }
 
