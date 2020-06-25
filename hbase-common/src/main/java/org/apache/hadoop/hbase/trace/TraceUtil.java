@@ -39,6 +39,7 @@ import io.jaegertracing.Configuration.SenderConfiguration;
 import io.jaegertracing.internal.senders.SenderResolver;
 import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.opentracingshim.TraceShim;
+import io.opentelemetry.opentracingshim.*;
 import io.opentelemetry.sdk.correlationcontext.CorrelationContextManagerSdk;
 import io.opentelemetry.sdk.trace.TracerSdkProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
@@ -65,10 +66,17 @@ public final class TraceUtil {
   public static final String HBASE_OPENTRACING_TRACER = "hbase.opentracing.tracer";
   public static final String HBASE_OPENTRACING_TRACER_DEFAULT = "jaeger";
   public static final String HBASE_OPENTRACING_MOCKTRACER = "mock";
-
+  public static volatile boolean isclosed = false;
+  private static Tracer foul_tracer=TraceShim.createTracerShim();
   private TraceUtil() {
   }
-
+  public static void close()
+  {
+    isclosed=true;
+  }
+  public static void start() {
+    isclosed=false;
+  }
   public static void initTracer(Configuration c, String serviceName) {
     /*if (c != null) {
       conf = new HBaseHTraceConfiguration(c);
@@ -93,10 +101,13 @@ public final class TraceUtil {
             tracerProvider.addSpanProcessor(SimpleSpanProcessor.newBuilder(exporter).build());
 
             tracer = TraceShim.createTracerShim(tracerProvider, new CorrelationContextManagerSdk());
-
+            if(isclosed)
+              tracer=foul_tracer;
             break;
           case HBASE_OPENTRACING_MOCKTRACER:
             tracer = new MockTracer();
+            if(isclosed)
+              tracer.close();
             break;
           default:
             throw new RuntimeException("Unexpected tracer");
@@ -113,6 +124,8 @@ public final class TraceUtil {
   }
 
   public static Tracer getTracer() {
+    if(isclosed)
+      return foul_tracer;
     return tracer;
   }
   

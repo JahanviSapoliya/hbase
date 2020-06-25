@@ -93,6 +93,7 @@ import org.apache.hadoop.hbase.security.access.UserPermission;
 import org.apache.hadoop.hbase.snapshot.ClientSnapshotDescriptionUtils;
 import org.apache.hadoop.hbase.snapshot.RestoreSnapshotException;
 import org.apache.hadoop.hbase.snapshot.SnapshotCreationException;
+import org.apache.hadoop.hbase.trace.TraceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.ForeignExceptionUtil;
@@ -1025,6 +1026,11 @@ class RawAsyncHBaseAdmin implements AsyncAdmin {
     return compactRegionServer(sn, true);
   }
 
+  @Override
+  public CompletableFuture<Void> enableTraces(ServerName RServer,boolean value) {
+    //do nothing
+    return null;
+  }
   private CompletableFuture<Void> compactRegionServer(ServerName sn, boolean major) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     addListener(getRegions(sn), (hRegionInfos, err) -> {
