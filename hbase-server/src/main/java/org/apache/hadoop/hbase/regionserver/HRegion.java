@@ -2998,9 +2998,18 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     try {
       if(!this.getRegionInfo().getTable().isSystemTable())
       {
+<<<<<<< HEAD
         SSPair = TraceUtil.createTrace("getting Region Scanner ");}
       // Verify families are all valid
       if (!scan.hasFamilies()) {
+=======
+//        SSPair = TraceUtil.createTrace("Creating Region Scanner ");}
+        SSPair = TraceUtil.createTrace("HRegion : get Scanner ");}
+
+        // Verify families are all valid
+      if (!scan.hasFamilies())
+      {
+>>>>>>> 61c6256b44... Shell in working condition
         // Adding all families to scanner
         for (byte[] family : this.htableDescriptor.getColumnFamilyNames()) {
           scan.addFamily(family);

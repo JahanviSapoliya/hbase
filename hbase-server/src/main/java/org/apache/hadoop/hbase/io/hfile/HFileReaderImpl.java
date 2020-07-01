@@ -1310,8 +1310,16 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
 
 
     try {
+<<<<<<< HEAD
       SSPair = TraceUtil.createTrace("HFileReaderImpl.readBlock");
       TraceUtil.addKVAnnotation("BlockType", String.valueOf(expectedBlockType.getCategory()));
+=======
+//      SSPair = TraceUtil.createTrace("Reading Block");
+      SSPair = TraceUtil.createTrace("HFileReaderImpl : readBlock ");
+
+      if(expectedBlockType!=null)
+        TraceUtil.addKVAnnotation("BlockType", String.valueOf(expectedBlockType.getCategory()));
+>>>>>>> 61c6256b44... Shell in working condition
       traceScope=SSPair.getFirst();
       while (true) {
         // Check cache for block. If found return.
