@@ -32,8 +32,8 @@ Enable disable traces dynamically for given regionserver
 EOF
       end
 
-      def command(rServer, value)
-        admin.enableTraces(rServer,value)
+      def command(regionserver, value)
+        admin.enableTraces(regionserver,value)
       end
     end
   end

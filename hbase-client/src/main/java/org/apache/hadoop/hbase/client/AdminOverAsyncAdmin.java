@@ -284,7 +284,7 @@ class AdminOverAsyncAdmin implements Admin {
 
   @Override
   public void enableTraces(ServerName RServer,boolean value)
-    throws IOException, InterruptedException {
+    throws IOException {
     get(admin.enableTraces(RServer,value));
   }
 

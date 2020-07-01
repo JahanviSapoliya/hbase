@@ -1921,7 +1921,8 @@ public class HFileBlock implements Cacheable {
           headerBuf = HEAP.allocate(hdrSize);
           Pair<Scope,Span> SSPair=null;
           try{
-            SSPair=TraceUtil.createTrace("Reading BlockData-Internal");
+//            SSPair=TraceUtil.createTrace("Reading BlockData-Internal");
+            SSPair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
             readAtOffset(is, headerBuf, hdrSize, false, offset, pread);
             TraceUtil.addKVAnnotation(
               Time.formatTime(Time.monotonicNow()),"Read header at path "+ this.pathName);
@@ -1952,7 +1953,8 @@ public class HFileBlock implements Cacheable {
         boolean readNextHeader;
         Pair<Scope,Span> SSPair=null;
         try{
-          SSPair =TraceUtil.createTrace("Reading BlockData-Internal");
+//          SSPair =TraceUtil.createTrace("Reading BlockData-Internal");
+          SSPair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
           readNextHeader =
             readAtOffset(is, onDiskBlock, onDiskSizeWithHeader - preReadHeaderSize, true, offset + preReadHeaderSize, pread);
             TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Read next at path "+ this.pathName);

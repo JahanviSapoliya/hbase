@@ -45,10 +45,9 @@ module Hbase
       @admin.close
     end
     #----------------------------------------------------------------------------------------------
-    def enableTraces(rServer,value)
-      @admin.enableTraces(ServerName.valueOf(rServer),value)
+    def enableTraces(regionserver,value)
+      @admin.enableTraces(ServerName.valueOf(regionserver),value)
     end
-
     #----------------------------------------------------------------------------------------------
     # Returns a list of tables in hbase
     def list(regex = '.*')

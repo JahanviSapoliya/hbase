@@ -178,7 +178,9 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     this.now = EnvironmentEdgeManager.currentTime();
     this.oldestUnexpiredTS = scan.isRaw() ? 0L : now - scanInfo.getTtl();
     this.minVersions = scanInfo.getMinVersions();
-    this.SSPair=TraceUtil.createTrace("Get scanner across store");
+//    this.SSPair=TraceUtil.createTrace("Get scanner across store");
+    this.SSPair=TraceUtil.createTrace("StoreScanner : Constructor");
+
     // We look up row-column Bloom filters for multi-column queries as part of
     // the seek operation. However, we also look the row-column Bloom filter
     // for multi-row (non-"get") scans because this is not done in
