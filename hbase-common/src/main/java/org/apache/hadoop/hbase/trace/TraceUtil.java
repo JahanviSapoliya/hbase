@@ -39,7 +39,6 @@ import io.jaegertracing.Configuration.SenderConfiguration;
 import io.jaegertracing.internal.senders.SenderResolver;
 import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.opentracingshim.TraceShim;
-import io.opentelemetry.opentracingshim.*;
 import io.opentelemetry.sdk.correlationcontext.CorrelationContextManagerSdk;
 import io.opentelemetry.sdk.trace.TracerSdkProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
@@ -169,9 +168,9 @@ public final class TraceUtil {
       //LOG.warn("no existing span. Please trace the code and find out where to initialize the span " +description);
     }
     Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).start();
-    Pair<Scope,Span> SSPair = new Pair (getTracer().scopeManager().activate(span),span);
+    Pair<Scope,Span> tracePair = new Pair (getTracer().scopeManager().activate(span),span);
     if(span != null) {
-      return SSPair;
+      return tracePair;
     }
     return null;
   }
@@ -188,10 +187,7 @@ public final class TraceUtil {
     }
     span =  (getTracer() == null) ? null
         : getTracer().buildSpan(description).asChildOf(span).start();
-//    Pair<Scope,Span> SSPair = new Pair (getTracer().scopeManager().activate(span),span);
-
     if(span != null) {
-//      return SSPair;
       return getTracer().scopeManager().activate(span);
     }
     return null;
@@ -202,9 +198,7 @@ public final class TraceUtil {
 
     Span span  = (getTracer() == null) ? null : getTracer().buildSpan(description).
         asChildOf(spanContext).start();
-//    Pair<Scope,Span> SSPair = new Pair (getTracer().scopeManager().activate(span),span);
     if(span != null) {
-//      return SSPair;
       return getTracer().scopeManager().activate(span);
     }
     return null;
@@ -213,13 +207,13 @@ public final class TraceUtil {
   public static void main(String[] args) {
     // SenderResolver.resolve();
     TraceUtil.initTracer(new Configuration(), "test");
-    Pair<Scope,Span> SSPair=null;
+    Pair<Scope,Span> tracePair=null;
     try {
-      SSPair = createTrace("test");
+      tracePair = createTrace("test");
       addTimelineAnnotation("testmsg");
     } finally {
-      SSPair.getFirst().close();
-      SSPair.getSecond().finish();
+      tracePair.getFirst().close();
+      tracePair.getSecond().finish();
       //scope.().finish();
     }
   }

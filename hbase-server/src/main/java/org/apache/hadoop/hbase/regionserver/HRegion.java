@@ -923,9 +923,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     status.enableStatusJournal(true);
     long nextSeqId = -1;
 
-//    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> tracePair = null;
     try {
-//      SSPair = TraceUtil.createTrace("Initializing region " + this);
+//      tracePair = TraceUtil.createTrace("Initializing region " + this);
       nextSeqId = initializeRegionInternals(reporter, status);
       return nextSeqId;
     } catch (IOException e) {
@@ -953,9 +953,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         LOG.debug("Region open journal:\n" + status.prettyPrintJournal());
       }
       status.cleanup();
-//      if (SSPair != null) {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//      if (tracePair != null) {
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
     }
   }
@@ -1567,9 +1567,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     status.enableStatusJournal(true);
     status.setStatus("Waiting for close lock");
 
-//    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> tracePair = null;
     try {
-//      SSPair = TraceUtil.createTrace(
+//      tracePair = TraceUtil.createTrace(
 //        "Closing region " + this.getRegionInfo().getEncodedName() + (abort ? " due to abort" : ""));
       synchronized (closeLock) {
         return doClose(abort, status);
@@ -1579,9 +1579,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         LOG.debug("Region close journal:\n" + status.prettyPrintJournal());
       }
       status.cleanup();
-//      if (SSPair != null) {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//      if (tracePair != null) {
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
     }
   }
@@ -2994,8 +2994,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
   private RegionScannerImpl getScanner(Scan scan, List<KeyValueScanner> additionalScanners,
       long nonceGroup, long nonce) throws IOException {
     startRegionOperation(Operation.SCAN);
-    Pair<Scope, Span> SSPair = null;
+    Pair<Scope, Span> tracePair = null;
     try {
+<<<<<<< HEAD
       if(!this.getRegionInfo().getTable().isSystemTable())
       {
 <<<<<<< HEAD
@@ -3005,6 +3006,12 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
 =======
 //        SSPair = TraceUtil.createTrace("Creating Region Scanner ");}
         SSPair = TraceUtil.createTrace("HRegion : get Scanner ");}
+=======
+      if(!this.getRegionInfo().getTable().isSystemTable()) {
+        //        tracePair = TraceUtil.createTrace("Creating Region Scanner ");
+                 tracePair = TraceUtil.createTrace("HRegion : get Scanner ");
+      }
+>>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
 
         // Verify families are all valid
       if (!scan.hasFamilies())
@@ -3037,9 +3044,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     } finally {
       closeRegionOperation(Operation.SCAN);
 
-      if (SSPair != null) {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
+      if (tracePair != null) {
+        tracePair.getFirst().close();
+        tracePair.getSecond().finish();
       }
     }
   }
@@ -4850,9 +4857,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     status.setStatus("Opening recovered edits");
     WAL.Reader reader = null;
 
-//    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> tracePair = null;
     try {
-//      SSPair = TraceUtil.createTrace(msg);
+//      tracePair = TraceUtil.createTrace(msg);
       reader = WALFactory.createReader(fs, edits, conf);
       long currentEditSeqId = -1;
       long currentReplaySeqId = -1;
@@ -5028,9 +5035,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       if (reader != null) {
         reader.close();
       }
-//      if (SSPair != null) {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//      if (tracePair != null) {
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
     }
   }
@@ -5169,9 +5176,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     // we will use writestate as a coarse-grain lock for all the replay events
     // (flush, compaction, region open etc)
     synchronized (writestate) {
-      Pair<Scope, Span> SSPair = null;
+      Pair<Scope, Span> tracePair = null;
       try {
-        SSPair = TraceUtil.createTrace("Preparing flush " + this);
+        tracePair = TraceUtil.createTrace("Preparing flush " + this);
         if (flush.getFlushSequenceNumber() < lastReplayedOpenRegionSeqId) {
           LOG.warn(getRegionInfo().getEncodedName() + " : " + "Skipping replaying flush event :" + TextFormat.shortDebugString(flush)
             + " because its sequence id is smaller than this regions lastReplayedOpenRegionSeqId " + " of " + lastReplayedOpenRegionSeqId);
@@ -5247,9 +5254,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       } finally {
         status.cleanup();
         writestate.notifyAll();
-        if (SSPair != null) {
-          SSPair.getFirst().close();
-          SSPair.getSecond().finish();
+        if (tracePair != null) {
+          tracePair.getFirst().close();
+          tracePair.getSecond().finish();
         }
       }
     }
@@ -5267,9 +5274,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     // region server crashes. In those cases, we may receive replay requests out of order from
     // the original seqIds.
     synchronized (writestate) {
-      Pair<Scope, Span> SSPair = null;
+      Pair<Scope, Span> tracePair = null;
       try {
-        SSPair = TraceUtil.createTrace("Committing flush" + this);
+        tracePair = TraceUtil.createTrace("Committing flush" + this);
         if (flush.getFlushSequenceNumber() < lastReplayedOpenRegionSeqId) {
           LOG.warn(getRegionInfo().getEncodedName() + " : " + "Skipping replaying flush event :" + TextFormat.shortDebugString(flush)
             + " because its sequence id is smaller than this regions lastReplayedOpenRegionSeqId "
@@ -5360,9 +5367,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       } finally {
         status.cleanup();
         writestate.notifyAll();
-        if (SSPair != null) {
-          SSPair.getFirst().close();
-          SSPair.getSecond().finish();
+        if (tracePair != null) {
+          tracePair.getFirst().close();
+          tracePair.getSecond().finish();
         }
       }
     }
@@ -6020,9 +6027,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
 
     boolean success = false;
 
-    Pair<Scope, Span> SSPair = null;
+    Pair<Scope, Span> tracePair = null;
     try {
-      SSPair = TraceUtil.createTrace("HRegion.getRowLock");
+      tracePair = TraceUtil.createTrace("HRegion.getRowLock");
       TraceUtil.addKVAnnotation("Lock","Getting a " + (readLock ? "readLock" : "writeLock"));
       TraceUtil.addKVAnnotation("Info","getting rowlock for " +
         this.getTableDescriptor().getTableName() + " for row " + Bytes.toString(row)+" in region "+getRegionInfo().getEncodedName());
@@ -6101,17 +6108,17 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         rowLockContext.cleanUp();
       }
       TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Got the row lock");
-      if (SSPair != null) {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
+      if (tracePair != null) {
+        tracePair.getFirst().close();
+        tracePair.getSecond().finish();
       }
     }
   }
 
   private void releaseRowLocks(List<RowLock> rowLocks) {
-    Pair<Scope, Span> SSPair = null;
+    Pair<Scope, Span> tracePair = null;
     try{
-        SSPair = TraceUtil.createTrace("HRegion.ReleaseRowLocks");
+        tracePair = TraceUtil.createTrace("HRegion.ReleaseRowLocks");
         if (rowLocks != null) {
         for (RowLock rowLock : rowLocks) {
           TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Releasing rowlocks for "
@@ -6121,9 +6128,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         rowLocks.clear();
       }
     }finally {
-      if (SSPair != null) {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
+      if (tracePair != null) {
+        tracePair.getFirst().close();
+        tracePair.getSecond().finish();
       }
     }
   }
@@ -6554,6 +6561,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     private final long maxResultSize;
     private final ScannerContext defaultScannerContext;
     private final FilterWrapper filter;
+//    protected Pair<Scope,Span> tracePair= null;
 
     @Override
     public RegionInfo getRegionInfo() {
@@ -6600,6 +6608,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         }
         scannerReadPoints.put(this, this.readPt);
       }
+//      tracePair=TraceUtil.createTrace("HRegionscannerIMPL");
       initializeScanners(scan, additionalScanners);
     }
 
@@ -7155,6 +7164,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
 
     @Override
     public synchronized void close() {
+      //
       if (storeHeap != null) {
         storeHeap.close();
         storeHeap = null;
@@ -7166,6 +7176,11 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       // no need to synchronize here.
       scannerReadPoints.remove(this);
       this.filterClosed = true;
+//      if(tracePair!=null)
+//      {
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
+//      }
     }
 
     KeyValueHeap getStoreHeapForTesting() {
