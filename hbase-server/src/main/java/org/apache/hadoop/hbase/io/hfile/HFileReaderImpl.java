@@ -1212,9 +1212,9 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
     // single-level.
     synchronized (metaBlockIndexReader.getRootBlockKey(block)) {
       // Check cache for block. If found return.
-      Pair<Scope, Span> SSPair = null;
+      Pair<Scope, Span> tracePair = null;
       try {
-        SSPair = TraceUtil.createTrace("HfilereaderIMPL:GetMetaBlock");
+        tracePair = TraceUtil.createTrace("HfilereaderIMPL:GetMetaBlock");
         long metaBlockOffset = metaBlockIndexReader.getRootBlockOffset(block);
         BlockCacheKey cacheKey =
           new BlockCacheKey(name, metaBlockOffset, this.isPrimaryReplicaReader(), BlockType.META);
@@ -1247,10 +1247,10 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
         }
         return uncompressedBlock;
       } finally {
-        if(SSPair!=null)
+        if(tracePair!=null)
         {
-          SSPair.getFirst().close();
-          SSPair.getSecond().finish();
+          tracePair.getFirst().close();
+          tracePair.getSecond().finish();
         }
       }
     }
@@ -1302,7 +1302,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
     boolean useLock = false;
     IdLock.Entry lockEntry = null;
     Scope traceScope = null;
-    Pair<Scope,Span> SSPair=null;
+    Pair<Scope,Span> tracePair=null;
 
     try{
       throw new IOException("throwing from ReadBlock");
@@ -1310,12 +1310,12 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
 
 
     try {
-//      SSPair = TraceUtil.createTrace("Reading Block");
-      SSPair = TraceUtil.createTrace("HFileReaderImpl : readBlock ");
+//      tracePair = TraceUtil.createTrace("Reading Block");
+      tracePair = TraceUtil.createTrace("HFileReaderImpl : readBlock ");
 
       if(expectedBlockType!=null)
         TraceUtil.addKVAnnotation("BlockType", String.valueOf(expectedBlockType.getCategory()));
-      traceScope=SSPair.getFirst();
+      traceScope=tracePair.getFirst();
       while (true) {
         // Check cache for block. If found return.
         if (cacheConf.shouldReadBlockFromCache(expectedBlockType)) {
@@ -1363,7 +1363,7 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
         TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"BlockCacheMiss");
         // Load block from filesystem.
         HFileBlock hfileBlock = fsBlockReader.readBlockData(dataBlockOffset, onDiskBlockSize, pread,
-          !isCompaction, shouldUseHeap(expectedBlockType),SSPair.getSecond());
+          !isCompaction, shouldUseHeap(expectedBlockType),tracePair.getSecond());
         //add path
         validateBlockType(hfileBlock, expectedBlockType);
         HFileBlock unpacked = hfileBlock.unpack(hfileContext, fsBlockReader);
@@ -1391,10 +1391,10 @@ public abstract class HFileReaderImpl implements HFile.Reader, Configurable {
       if (lockEntry != null) {
         offsetLock.releaseLockEntry(lockEntry);
       }
-      if(SSPair!=null)
+      if(tracePair!=null)
       {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
+        tracePair.getFirst().close();
+        tracePair.getSecond().finish();
       }
     }
   }

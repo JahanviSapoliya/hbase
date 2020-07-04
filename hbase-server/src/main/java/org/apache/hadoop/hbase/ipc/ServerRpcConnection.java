@@ -687,9 +687,9 @@ abstract class ServerRpcConnection implements Closeable {
     SpanContext spanContext = null;
 //    TraceUtil.LOG.debug("the call id is "+id+ " "+header.hasTraceInfo() + " "+header.getTraceInfo().hasSpanContext());
     if (header.hasTraceInfo() && header.getTraceInfo().hasSpanContext()) {
-//      TracingProtos.RPCTInfo rpctInfo = header.getTraceInfo();
+      TracingProtos.RPCTInfo rpctInfo = header.getTraceInfo();
 //      TraceUtil.LOG.debug("Still not converted ");
-//      spanContext = TraceUtil.byteArrayToSpanContext(rpctInfo.getSpanContext().toByteArray());
+      spanContext = TraceUtil.byteArrayToSpanContext(rpctInfo.getSpanContext().toByteArray());
 //      TraceUtil.LOG.debug("Am not priting full details "+spanContext.toString());
 //      TraceUtil.LOG.debug("priting header " + header);
       //TraceUtil.LOG.debug("priting param " + param);
@@ -796,6 +796,7 @@ abstract class ServerRpcConnection implements Closeable {
   private static class ByteBuffByteInput extends ByteInput {
 
     private ByteBuff buf;
+
     private int offset;
     private int length;
 

@@ -130,9 +130,9 @@ public class StoreFileScanner implements KeyValueScanner {
       sortedFiles.add(file);
     }
     boolean succ = false;
-   // Pair<Scope, Span> SSPair=null;
+   // Pair<Scope, Span> tracePair=null;
     try {
-      //SSPair= TraceUtil.createTrace("StoreFileScanner: get Scanners For StoreFiles");
+      //tracePair= TraceUtil.createTrace("StoreFileScanner: get Scanners For StoreFiles");
       for (int i = 0, n = files.size(); i < n; i++) {
         HStoreFile sf = sortedFiles.remove();
         StoreFileScanner scanner;
@@ -152,10 +152,10 @@ public class StoreFileScanner implements KeyValueScanner {
           scanner.close();
         }
       }
-      //if(SSPair!=null)
+      //if(tracePair!=null)
 //      {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
     }
     return scanners;

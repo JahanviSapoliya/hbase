@@ -1355,14 +1355,14 @@ public class PerformanceEvaluation extends Configured implements Tool {
           }
           long startTime = System.nanoTime();
           boolean requestSent = false;
-//          Pair<Scope, Span> SSPair = null;
+//          Pair<Scope, Span> tracePair = null;
 //          try {
-//            SSPair = TraceUtil.createTrace("test row");
+//            tracePair = TraceUtil.createTrace("test row");
             requestSent = testRow(i);
 //          } finally {
-//            if (SSPair != null) {
-//              SSPair.getFirst().close();
-//              SSPair.getSecond().finish();
+//            if (tracePair != null) {
+//              tracePair.getFirst().close();
+//              tracePair.getSecond().finish();
 //            }
 //          }
           if ((i - startRow) > opts.measureAfter) {

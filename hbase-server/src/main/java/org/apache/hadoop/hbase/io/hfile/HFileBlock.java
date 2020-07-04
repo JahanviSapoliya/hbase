@@ -1919,18 +1919,18 @@ public class HFileBlock implements Cacheable {
             LOG.trace("Extra see to get block size!", new RuntimeException());
           }
           headerBuf = HEAP.allocate(hdrSize);
-          Pair<Scope,Span> SSPair=null;
+          Pair<Scope,Span> tracePair=null;
           try{
-//            SSPair=TraceUtil.createTrace("Reading BlockData-Internal");
-            SSPair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
+//            tracePair=TraceUtil.createTrace("Reading BlockData-Internal");
+            tracePair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
             readAtOffset(is, headerBuf, hdrSize, false, offset, pread);
             TraceUtil.addKVAnnotation(
               Time.formatTime(Time.monotonicNow()),"Read header at path "+ this.pathName);
             TraceUtil.addKVAnnotation("offset ",""+offset);
           }finally{
-            if(SSPair!=null) {
-              SSPair.getFirst().close();
-              SSPair.getSecond().finish();
+            if(tracePair!=null) {
+              tracePair.getFirst().close();
+              tracePair.getSecond().finish();
             }
           }
           headerBuf.rewind();
@@ -1951,19 +1951,19 @@ public class HFileBlock implements Cacheable {
           onDiskBlock.put(0, headerBuf, 0, hdrSize).position(hdrSize);
         }
         boolean readNextHeader;
-        Pair<Scope,Span> SSPair=null;
+        Pair<Scope,Span> tracePair=null;
         try{
-//          SSPair =TraceUtil.createTrace("Reading BlockData-Internal");
-          SSPair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
+//          tracePair =TraceUtil.createTrace("Reading BlockData-Internal");
+          tracePair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
           readNextHeader =
             readAtOffset(is, onDiskBlock, onDiskSizeWithHeader - preReadHeaderSize, true, offset + preReadHeaderSize, pread);
             TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Read next at path "+ this.pathName);
             TraceUtil.addKVAnnotation( "offset",""+offset);
         }finally
-        {if(SSPair!=null)
+        {if(tracePair!=null)
         {
-          SSPair.getFirst().close();
-          SSPair.getSecond().finish();
+          tracePair.getFirst().close();
+          tracePair.getSecond().finish();
         }
         }
         onDiskBlock.rewind(); // in case of moving position when copying a cached header

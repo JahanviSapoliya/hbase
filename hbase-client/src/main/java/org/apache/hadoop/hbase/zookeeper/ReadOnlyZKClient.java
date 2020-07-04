@@ -270,9 +270,9 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-//    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> tracePair = null;
 //    try {
-//      SSPair = TraceUtil.createTrace("ReadOnlyZKClient.get");
+//      tracePair = TraceUtil.createTrace("ReadOnlyZKClient.get");
       CompletableFuture<byte[]> future = new CompletableFuture<>();
       tasks.add(new ZKTask<byte[]>(path, future, "get") {
 
@@ -283,10 +283,10 @@ public final class ReadOnlyZKClient implements Closeable {
       });
       return future;
 //    } finally {
-//      if(SSPair!=null)
+//      if(tracePair!=null)
 //      {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
 //    }
   }
@@ -295,9 +295,9 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-//    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> tracePair = null;
 //    try {
-//      SSPair = TraceUtil.createTrace("ReadOnlyZKClient.exists");
+//      tracePair = TraceUtil.createTrace("ReadOnlyZKClient.exists");
       CompletableFuture<Stat> future = new CompletableFuture<>();
       tasks.add(new ZKTask<Stat>(path, future, "exists") {
 
@@ -307,9 +307,9 @@ public final class ReadOnlyZKClient implements Closeable {
       });
       return future;
 //    } finally {
-//      if (SSPair != null) {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//      if (tracePair != null) {
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
 //    }
   }
@@ -318,9 +318,9 @@ public final class ReadOnlyZKClient implements Closeable {
     if (closed.get()) {
       return FutureUtils.failedFuture(new DoNotRetryIOException("Client already closed"));
     }
-//    Pair<Scope, Span> SSPair = null;
+//    Pair<Scope, Span> tracePair = null;
 //    try {
-//      SSPair = TraceUtil.createTrace("ReadOnlyZKClient.list");
+//      tracePair = TraceUtil.createTrace("ReadOnlyZKClient.list");
       CompletableFuture<List<String>> future = new CompletableFuture<>();
       tasks.add(new ZKTask<List<String>>(path, future, "list") {
 
@@ -332,9 +332,9 @@ public final class ReadOnlyZKClient implements Closeable {
 
       return future;
 //    } finally {
-//      if (SSPair != null) {
-//        SSPair.getFirst().close();
-//        SSPair.getSecond().finish();
+//      if (tracePair != null) {
+//        tracePair.getFirst().close();
+//        tracePair.getSecond().finish();
 //      }
 //    }
   }
