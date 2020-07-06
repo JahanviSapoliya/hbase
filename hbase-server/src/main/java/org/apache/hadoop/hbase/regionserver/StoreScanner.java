@@ -97,13 +97,9 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
   private final int minVersions;
   private final long maxRowSize;
   private final long cellsPerHeartbeatCheck;
-<<<<<<< HEAD
-
-=======
   /* there seems an undetected flow so changing the trace*/
 
 //  Pair<Scope,Span> tracePair=null;
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
   // 1) Collects all the KVHeap that are eagerly getting closed during the
   //    course of a scan
   // 2) Collects the unused memstore scanners. If we close the memstore scanners
@@ -184,15 +180,8 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     this.now = EnvironmentEdgeManager.currentTime();
     this.oldestUnexpiredTS = scan.isRaw() ? 0L : now - scanInfo.getTtl();
     this.minVersions = scanInfo.getMinVersions();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-//    this.SSPair=TraceUtil.createTrace("Get scanner across store");
-    this.SSPair=TraceUtil.createTrace("StoreScanner : Constructor");
->>>>>>> 61c6256b44... Shell in working condition
-=======
+    //removed cause trace is not closing
 //    this.tracePair=TraceUtil.createTrace("StoreScanner : Constructor");
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
 
     // We look up row-column Bloom filters for multi-column queries as part of
     // the seek operation. However, we also look the row-column Bloom filter
@@ -256,15 +245,9 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     store.addChangedReaderObserver(this);
 
     List<KeyValueScanner> scanners = null;
-<<<<<<< HEAD
-    Pair<Scope,Span> SSPair=null;
-    try {
-      SSPair=TraceUtil.createTrace("Get scanner across store");
-=======
     Pair<Scope,Span> tracePair=null;
     try {
       tracePair=TraceUtil.createTrace("StoreScanner : StoreScanner");
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
       // Pass columns to try to filter out unnecessary StoreFiles.
       scanners = selectScannersFrom(store,
         store.getScanners(cacheBlocks, scanUsePread, false, matcher, scan.getStartRow(),
@@ -292,17 +275,10 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
       store.deleteChangedReaderObserver(this);
       throw e;
     }finally{
-<<<<<<< HEAD
-      if(SSPair!=null)
-      {
-        SSPair.getFirst().close();
-        SSPair.getSecond().finish();
-=======
       if(tracePair!=null)
       {
         tracePair.getFirst().close();
         tracePair.getSecond().finish();
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
       }
     }
   }
@@ -548,6 +524,8 @@ public class StoreScanner extends NonReversedNonLazyKeyValueScanner
     } finally {
       closeLock.unlock();
     }
+    //removed cause trace is not closing
+
 //    if(tracePair != null && withDelayedScannersClose)
 //    {
 //      LOG.info("zzzzzzzzzzzzzzzzzzzzzzzzzzz");

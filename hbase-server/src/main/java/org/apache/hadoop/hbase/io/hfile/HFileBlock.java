@@ -1921,17 +1921,8 @@ public class HFileBlock implements Cacheable {
           headerBuf = HEAP.allocate(hdrSize);
           Pair<Scope,Span> tracePair=null;
           try{
-<<<<<<< HEAD
-<<<<<<< HEAD
-            SSPair=TraceUtil.createTrace("HFileBlock:ReadBlockDataInternal:readAtOffset");
-=======
-//            SSPair=TraceUtil.createTrace("Reading BlockData-Internal");
-            SSPair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
->>>>>>> 61c6256b44... Shell in working condition
-=======
 //            tracePair=TraceUtil.createTrace("Reading BlockData-Internal");
             tracePair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
             readAtOffset(is, headerBuf, hdrSize, false, offset, pread);
             TraceUtil.addKVAnnotation(
               Time.formatTime(Time.monotonicNow()),"Read header at path "+ this.pathName+" at offset "+offset);
@@ -1961,17 +1952,8 @@ public class HFileBlock implements Cacheable {
         boolean readNextHeader;
         Pair<Scope,Span> tracePair=null;
         try{
-<<<<<<< HEAD
-<<<<<<< HEAD
-          SSPair =TraceUtil.createTrace("HFileBlock:ReadBlockDataInternal:readAtOffset");
-=======
-//          SSPair =TraceUtil.createTrace("Reading BlockData-Internal");
-          SSPair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
->>>>>>> 61c6256b44... Shell in working condition
-=======
 //          tracePair =TraceUtil.createTrace("Reading BlockData-Internal");
           tracePair=TraceUtil.createTrace("HFileBlock : read BlockDataInternal");
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
           readNextHeader =
             readAtOffset(is, onDiskBlock, onDiskSizeWithHeader - preReadHeaderSize, true, offset + preReadHeaderSize, pread);
             TraceUtil.addKVAnnotation(Time.formatTime(Time.monotonicNow()),"Read next at path "+ this.pathName+" offset "+offset);

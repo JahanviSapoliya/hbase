@@ -2996,27 +2996,12 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     startRegionOperation(Operation.SCAN);
     Pair<Scope, Span> tracePair = null;
     try {
-<<<<<<< HEAD
-      if(!this.getRegionInfo().getTable().isSystemTable())
-      {
-<<<<<<< HEAD
-        SSPair = TraceUtil.createTrace("getting Region Scanner ");}
-      // Verify families are all valid
-      if (!scan.hasFamilies()) {
-=======
-//        SSPair = TraceUtil.createTrace("Creating Region Scanner ");}
-        SSPair = TraceUtil.createTrace("HRegion : get Scanner ");}
-=======
       if(!this.getRegionInfo().getTable().isSystemTable()) {
-        //        tracePair = TraceUtil.createTrace("Creating Region Scanner ");
-                 tracePair = TraceUtil.createTrace("HRegion : get Scanner ");
+         tracePair = TraceUtil.createTrace("HRegion : get Scanner ");
       }
->>>>>>> 2263e55365... Reverted from constructor level traces to enclosed within constructor traces + client service traces
-
         // Verify families are all valid
       if (!scan.hasFamilies())
       {
->>>>>>> 61c6256b44... Shell in working condition
         // Adding all families to scanner
         for (byte[] family : this.htableDescriptor.getColumnFamilyNames()) {
           scan.addFamily(family);
@@ -6561,7 +6546,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     private final long maxResultSize;
     private final ScannerContext defaultScannerContext;
     private final FilterWrapper filter;
-//    protected Pair<Scope,Span> tracePair= null;
+    //removed cause trace is not closing
+
+    //    protected Pair<Scope,Span> tracePair= null;
 
     @Override
     public RegionInfo getRegionInfo() {
@@ -6608,7 +6595,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
         }
         scannerReadPoints.put(this, this.readPt);
       }
-//      tracePair=TraceUtil.createTrace("HRegionscannerIMPL");
+      //removed cause trace is not closing
+
+      //      tracePair=TraceUtil.createTrace("HRegionscannerIMPL");
       initializeScanners(scan, additionalScanners);
     }
 
@@ -7176,7 +7165,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
       // no need to synchronize here.
       scannerReadPoints.remove(this);
       this.filterClosed = true;
-//      if(tracePair!=null)
+      //removed cause trace is not closing
+
+      //      if(tracePair!=null)
 //      {
 //        tracePair.getFirst().close();
 //        tracePair.getSecond().finish();
